@@ -1,106 +1,111 @@
 # Sepia threat model
 
-What this tool defends against, what it does not, and where the sharp edges
-are. Written for people deciding whether to trust it with something that
-matters.
+What this tool defends against, what it doesn't, and where the sharp
+edges are. If you're deciding whether to trust Sepia with a photo that
+actually matters, read this whole page first. It's short on purpose.
 
-## What Sepia protects you from
+## What it protects you from
 
-**The recipient of a shared image, and anyone downstream of them,** learning
-things from the file that the pixels don't show:
+The adversary is whoever you send the image to, plus everyone they forward
+it to, plus every scraper that ever downloads it. What they'd learn beyond
+the pixels: where the photo was taken (Exif GPS, XMP location), whose
+camera took it (artist and owner-name fields, body and lens serials, the
+unique image IDs that let two separate photos be pinned to one device),
+and when and how (timestamps to the second, time zones, editing software,
+comments, IPTC). Then there are the stowaways. Most people have no idea
+their JPEG carries a second, smaller copy of itself, and that cropping in
+many apps updates the big image while the old thumbnail keeps showing
+whatever got cropped away. Motion-photo modes are worse: a real video
+clip, glued on after the byte where the image format says the file ends,
+carried around invisibly by every viewer and messenger that ships it.
 
-- Location: Exif GPS, GPS date/time, XMP location fields.
-- Identity: artist and owner-name fields, camera body and lens serial
-  numbers, unique image IDs that tie separate photos to one camera.
-- Time and context: capture timestamps, time zones, editing software names,
-  comments, IPTC blocks.
-- Hidden copies: the embedded Exif thumbnail (which can show what you
-  cropped out), multi-picture blocks, and data appended after the image ends
-  (motion-photo video clips are the common case).
-- Visible content you chose to cover: ink and pixelation are drawn into the
-  pixel data and the file is re-encoded. There is no layer to peel off.
+Sepia surfaces all of that before you send, and it makes your redactions
+real. Ink and pixelation get drawn into the pixel data itself. The file is
+re-encoded afterward, so there's no annotation layer to peel off, no
+"undo" living in the file.
 
-The mechanism matters: Sepia does not "strip" metadata by editing the
-original file. It decodes the image to raw pixels, draws your redactions,
-and encodes a brand new file from the canvas. The encoder never sees the
-original container, so there is nothing to accidentally keep. The X-ray on
-the original is for your information; the scrub does not depend on the
-parser having caught everything.
+One design decision does most of the security work, so I'll be precise
+about it. Sepia never edits your original file and tries to snip out the
+bad parts, the way most strippers do. It decodes the image to raw pixels,
+draws your covers on those pixels, and encodes an entirely new file from
+the canvas. The encoder is never shown the original container. So even if
+the X-ray missed some exotic metadata block, that block has no route into
+the output. Detection quality affects what you get warned about, never
+what gets removed.
 
-The verify step then re-parses the actual output bytes and reports what is
-in them. If the environment's encoder ever wrote something unexpected, it
-would show up there, not stay invisible.
+And then the output gets checked anyway. The proof screen is the same
+parser that judged your original, pointed at the bytes you're about to
+share. If a platform encoder someday writes something surprising into the
+export, it lands on that screen, not in the dark.
 
-## What Sepia does NOT protect you from
+## What it does NOT protect you from
 
-- **The pixels themselves.** A face, a street sign, a reflection, a tattoo,
-  an address on an envelope. Sepia flags machine-readable codes (QR,
-  barcodes) where the platform supports detection, and nothing else. Looking
-  is your job.
-- **Pixelation reversal on text.** Pixelated text can sometimes be
-  reconstructed, and research keeps getting better at it. Sepia warns about
-  this in the UI and uses large cells, but the honest rule stands: ink for
-  text, pixelate only for faces and objects.
-- **Camera sensor fingerprinting (PRNU).** Every camera sensor leaves a
-  faint noise pattern in every photo. A well-resourced forensic analyst with
-  reference photos from your camera can match them. No metadata scrubber
-  touches this. If your adversary is a lab, do not share the photo.
-- **Recompression fingerprinting.** JPEG quantization tables and encoder
-  quirks can hint at what software produced a file. Sepia's output looks
-  like standard browser canvas output, which is at least a very large crowd
-  to hide in.
-- **What you already sent.** Sepia has no reach into the copies that exist.
-- **A compromised device.** If the device is already hostile, the image was
-  exposed the moment you opened it anywhere.
-- **PDFs and documents.** Out of scope on purpose. Document redaction has
-  different failure modes and half-supporting it would invite exactly the
-  disasters it is famous for.
+The pixels themselves, first and always. A face, a street sign, a
+reflection in a window, an address on an envelope: that's content, and
+covering it is your judgment call. Sepia flags machine-readable codes
+where the platform can detect them, and that is the whole extent of its
+opinion about your pixels.
+
+Pixelation reversal on text. Researchers keep getting better at
+reconstructing pixelated writing. Sepia uses big cells and the UI pushes
+you toward ink for anything textual, but the honest rule is simple: ink
+for words and numbers, pixelate only for faces and objects.
+
+Camera sensor fingerprinting. Every sensor leaves a faint noise pattern
+(PRNU) in every photo it takes, and a forensic analyst with reference
+shots from your camera can match them. No metadata scrubber touches this.
+If your adversary is a lab, don't share the photo.
+
+A few more, briefly. Recompression analysis can hint at which encoder
+made a file; Sepia's output looks like ordinary browser canvas output,
+an enormous crowd to hide in, but a crowd is not invisibility. Copies you
+already sent are gone, obviously. A compromised device already saw
+everything. And PDFs get refused outright. Court filings with peel-off
+black boxes make the news every couple of years, document redaction fails
+in its own special ways, and a tool that half-handles it would be worse
+than one that says no.
 
 ## Where your image goes
 
-Nowhere.
+Nowhere. Not "encrypted in transit", not "never sold". Nowhere.
 
-- **Web app:** the page loads its own files from its origin and that is the
-  only network access its CSP allows. Images are read in memory, processed
-  in memory, and handed back as a download or a share. Nothing image-related
-  is written to browser storage, with one narrow exception: when you share
-  INTO the installed web app, the browser's share-target machinery hands the
-  file through a cache entry, which Sepia deletes on pickup. The Android app
-  does not have this exception.
-- **Android app:** no INTERNET permission, so the process cannot open
-  sockets at all; this is enforced by the OS and visible in the manifest.
-  The shared-in image is streamed from the content resolver directly into
-  the page over a local interception, never written by Sepia to disk. The
-  scrubbed output goes where you send it: the share sheet (via a scoped
-  cache file that is cleared on the next share) or your gallery.
-- The app-switcher thumbnail is blocked (FLAG_SECURE), because the screen
-  holds the unredacted original while you work.
-- Backups are disabled for the Android app, so no copy of anything rides
-  along in a device backup or transfer.
+The web page loads its own files from its origin and its CSP allows
+nothing else. Images are read into memory, processed in memory, handed
+back as a download or a share. Sepia writes no image data to browser
+storage, with one narrow exception: sharing INTO the installed web app
+goes through the browser's share-target machinery, which parks the file
+in a cache entry that Sepia deletes on pickup.
 
-## Trust surface
+The Android app has no INTERNET permission, so the process cannot open a
+socket. That's enforced by the OS and visible in the manifest. An image
+shared into the app streams from the content resolver straight into the
+page through a local interception; Sepia never writes it to disk. Exports
+go where you point them: the share sheet (through a scoped cache file,
+cleared on the next share) or your gallery. The app switcher's screenshot
+of the editor is blocked with FLAG_SECURE, since the screen holds the
+unredacted original while you work, and backups are disabled so nothing
+rides along in a device transfer.
 
-What you are trusting when you use Sepia:
+## What you're trusting
 
-- The browser or WebView's image decoder and canvas encoder (that is: the
-  platform you already trust with every image you view).
-- Sepia's own code: about three thousand lines of dependency-free
-  JavaScript and a thin Kotlin shell, MIT licensed and readable in an
-  afternoon.
-- The site serving the web app (or the APK signature, once installed).
+Three things. Your browser or WebView's image decoder and canvas encoder,
+which already handle every image you look at, so that trust is not new.
+Sepia's own code, which is a few thousand lines of dependency-free
+JavaScript plus a thin Kotlin shell, MIT licensed, honestly readable in an
+afternoon. And the site serving you the web app, or the APK signature once
+you've installed it.
 
-What you are NOT trusting: any server, any third-party library, any
-analytics vendor, any promise that traffic "isn't logged". There is no
-traffic.
+Notice what's not on the list. No server. No third-party library. No
+analytics vendor promising your data is handled respectfully. There is no
+traffic to make promises about.
 
-## Known honest limitations
+## Honest limitations
 
-- The X-ray itemizes JPEG, PNG, and WebP. AVIF/HEIF metadata is flagged as
-  present but not itemized; the scrub-by-re-encode covers those formats all
-  the same.
-- HEIC input does not decode in most browsers, so Sepia can't open it;
-  sharing from a gallery usually converts to JPEG on the way.
-- Animated GIFs flatten to their first frame; wide-gamut color is squeezed
-  to sRGB; a JPEG re-encode at quality 90 is a small quality loss. These are
-  the cost of the guarantee that the original container never reaches the
-  output.
+The X-ray itemizes JPEG, PNG, and WebP. AVIF and HEIF metadata gets
+flagged as present rather than itemized; the scrub-by-re-encode covers
+those formats all the same. HEIC input usually can't decode in a browser
+at all, though sharing from a gallery tends to convert to JPEG on the way
+out. Animated GIFs flatten to their first frame. Wide-gamut color gets
+squeezed to sRGB, and a JPEG re-encode at quality 90 costs a little
+fidelity. Those are the price of the rule that the original container
+never reaches the output.

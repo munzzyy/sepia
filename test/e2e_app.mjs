@@ -173,6 +173,14 @@ async function main() {
     check("negative control: fixture is provably dirty", report.counts.high >= 4, JSON.stringify(report.counts));
     const drawerOpen = await c.evalJs("!document.getElementById('xray').hidden");
     check("x-ray drawer auto-opens on serious leaks", drawerOpen === true);
+
+    // The hidden attribute must actually hide: display classes were once
+    // defeating it, so assert computed styles, not just the attribute.
+    const vis = await c.evalJs(`(() => {
+      const gone = (id) => getComputedStyle(document.getElementById(id)).display === "none";
+      return { cropBar: gone("crop-bar"), codes: typeof BarcodeDetector === "function" || gone("btn-codes"), note: gone("pixelate-note") };
+    })()`);
+    check("hidden really hides: crop bar, codes button, pixelate note", vis.cropBar && vis.codes && vis.note, JSON.stringify(vis));
     await shot(c, "02-editor-xray.png");
     await c.evalJs("document.getElementById('btn-xray-close').click(); 'ok'");
 
