@@ -43,5 +43,16 @@ else
   echo "missing $rules, ad-blocker name check did NOT run"; fail=1
 fi
 
+# One version, five spellings. A release that bumps some but not all of them
+# ships a wrapper that lies about what it is or a cache that never busts.
+ver=$(grep -oE '"version": "[^"]+"' package.json | cut -d'"' -f4)
+bad=0
+grep -q "VERSION = \"$ver\"" app/js/main.js || { echo "app/js/main.js VERSION != $ver"; bad=1; }
+grep -q "VERSION = \"sepia-v$ver\"" app/sw.js || { echo "app/sw.js VERSION != sepia-v$ver"; bad=1; }
+grep -q "versionName = \"$ver\"" android/app/build.gradle.kts || { echo "gradle versionName != $ver"; bad=1; }
+grep -q "^## $ver" CHANGELOG.md || { echo "CHANGELOG.md missing ## $ver"; bad=1; }
+if [ "$bad" -eq 1 ]; then exit 1; fi
+echo "version $ver consistent across package.json, main.js, sw.js, gradle, changelog"
+
 if [ "$fail" -eq 0 ]; then echo "clean: no em/en dashes, no AI attribution"; fi
 exit $fail

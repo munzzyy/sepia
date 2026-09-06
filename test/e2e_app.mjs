@@ -340,11 +340,21 @@ async function main() {
     const announced = await c.evalJs("document.getElementById('sr-live').textContent");
     check("keyboard: action announced to screen readers", announced.includes("Cover box"), announced);
     check("keyboard: hint bar appears with canvas focus", await c.evalJs("!document.getElementById('kbd-hint').hidden"));
+    // Deselect first: the fresh box is selected, and Tab past the last
+    // element deliberately releases focus instead of trapping it.
+    await c.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape" });
+    await c.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape" });
+    await sleep(100);
     await c.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab" });
     await c.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab" });
     await sleep(150);
     const cycled = await c.evalJs("document.getElementById('sr-live').textContent");
     check("keyboard: Tab cycles to the box and announces position", /box 1 of 1/.test(cycled), cycled);
+    check("keyboard: delete chip appears for the selected box", await c.evalJs("!document.getElementById('btn-del-box').hidden"));
+    await c.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab" });
+    await c.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab" });
+    await sleep(100);
+    check("keyboard: Tab past the last element releases the cycle (no trap)", await c.evalJs("document.getElementById('btn-del-box').hidden"));
 
     // ----------------------------------------------- demo + clean fixture
     // One close click arms the discard guard while covers exist; the second

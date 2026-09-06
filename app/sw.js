@@ -73,11 +73,12 @@ self.addEventListener("fetch", (event) => {
         }
         try {
           const form = await event.request.formData();
-          const file = form.get("image");
-          if (file && file.size <= 100 * 1024 * 1024) {
-            const cache = await caches.open(SHARE_CACHE);
+          const files = form.getAll("image").filter((f) => f && f.size && f.size <= 100 * 1024 * 1024);
+          const cache = await caches.open(SHARE_CACHE);
+          let n = 0;
+          for (const file of files.slice(0, 50)) {
             await cache.put(
-              "/share-incoming",
+              `/share-incoming-${n++}`,
               new Response(file, { headers: { "content-type": file.type || "image/*" } })
             );
           }

@@ -54,13 +54,21 @@ export async function saveOut(blob, name) {
   return "download";
 }
 
-// A share handed to the wrapper arrives as a one-shot token; the page reads
+// Shares handed to the wrapper arrive as one-shot tokens; the page reads
 // the bytes back over the asset-loader origin, never through a JS string.
-export function sharedToken() {
+// Older bridges expose a single token, newer ones a JSON array.
+export function sharedTokens() {
   try {
-    return native()?.sharedImageToken() || "";
+    const native_ = native();
+    if (!native_) return [];
+    if (typeof native_.sharedImageTokens === "function") {
+      const parsed = JSON.parse(native_.sharedImageTokens() || "[]");
+      return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string" && x) : [];
+    }
+    const one = native_.sharedImageToken?.() || "";
+    return one ? [one] : [];
   } catch {
-    return "";
+    return [];
   }
 }
 

@@ -226,6 +226,7 @@ export function createCanvasView(host) {
       return;
     }
     selected = null;
+    host.onSelect(null);
     gesture = { kind: "draw", x0: p.x, y0: p.y, draft: null };
     requestRender();
   });
@@ -356,19 +357,26 @@ export function createCanvasView(host) {
   // is pointer-only. Focus is the module's selected/focusedSuggestion pair.
   let focusedSuggestion = null;
 
+  // Returns false when the cycle walks off either end, so Tab can leave
+  // the canvas instead of trapping keyboard focus on it forever.
   function cycleFocus(dir) {
     const editor = host.getEditor();
     const suggestions = host.getSuggestions();
     const ops = paintOps(editor);
     const ring = [...suggestions.map((s) => ({ kind: "s", item: s })), ...ops.map((o) => ({ kind: "o", item: o }))];
-    if (!ring.length) {
-      host.announce(t("Nothing on the canvas yet. Press B to add a cover box."));
-      return;
-    }
+    if (!ring.length) return false;
     const at = ring.findIndex(
       (e) => (e.kind === "s" && e.item === focusedSuggestion) || (e.kind === "o" && e.item === selected),
     );
-    const next = ring[(at + dir + ring.length) % ring.length];
+    const nextIdx = at === -1 ? (dir === 1 ? 0 : ring.length - 1) : at + dir;
+    if (nextIdx >= ring.length || nextIdx < 0) {
+      selected = null;
+      focusedSuggestion = null;
+      host.onSelect(null);
+      requestRender();
+      return false;
+    }
+    const next = ring[nextIdx];
     focusedSuggestion = next.kind === "s" ? next.item : null;
     selected = next.kind === "o" ? next.item : null;
     const idx = ring.indexOf(next) + 1;
@@ -386,7 +394,9 @@ export function createCanvasView(host) {
         t("{tool} box {n} of {total}: {where}", { tool: label, n: idx, total: ring.length, where: describeRect(next.item.rect) }),
       );
     }
+    host.onSelect(selected);
     requestRender();
+    return true;
   }
 
   let announceTimer = 0;
@@ -403,8 +413,9 @@ export function createCanvasView(host) {
     const step = ev.ctrlKey ? 1 : Math.max(2, Math.round(8 / view.scale));
     const key = ev.key;
     if (key === "Tab") {
-      cycleFocus(ev.shiftKey ? -1 : 1);
-      ev.preventDefault();
+      // Only consumed while there is something to cycle to; at the ends
+      // (and on an empty canvas) focus moves on normally.
+      if (cycleFocus(ev.shiftKey ? -1 : 1)) ev.preventDefault();
       return;
     }
     if (key === "Enter" && focusedSuggestion) {
@@ -435,6 +446,7 @@ export function createCanvasView(host) {
       removeOp(editor, selected.id);
       selected = null;
       host.onChange();
+      host.onSelect(null);
       host.announce(t("Box removed"));
       requestRender();
       ev.preventDefault();
@@ -443,6 +455,7 @@ export function createCanvasView(host) {
     if (key === "Escape") {
       selected = null;
       focusedSuggestion = null;
+      host.onSelect(null);
       host.announce(t("Selection cleared"));
       requestRender();
       return;
@@ -524,9 +537,19 @@ export function createCanvasView(host) {
     clearSelection() {
       selected = null;
       focusedSuggestion = null;
+      host.onSelect(null);
       requestRender();
     },
     getSelected: () => selected,
+    deleteSelected() {
+      if (!selected) return;
+      removeOp(host.getEditor(), selected.id);
+      selected = null;
+      host.onChange();
+      host.onSelect(null);
+      host.announce(t("Box removed"));
+      requestRender();
+    },
     setCropDraft(r) {
       cropDraft = r;
       requestRender();

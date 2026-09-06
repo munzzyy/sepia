@@ -185,6 +185,29 @@ button {
 .about-line { text-align: center; margin-top: 30px; }
 .about-line a { color: var(--accent); }
 
+.doc-page main { max-width: 680px; margin: 0 auto; padding: 32px 20px; }
+
+.locale-line { text-align: center; margin-top: 26px; }
+.locale-line select {
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  min-height: 44px;
+}
+
+.del-chip { border-color: var(--high); color: var(--high); }
+
+.xray-export {
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin-top: 6px;
+}
+
 /* ----------------------------------------------------------- landing */
 
 .landing { margin-top: 56px; }
@@ -293,13 +316,19 @@ button {
 .toolbar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
   padding: 8px;
   border-top: 1px solid var(--line);
   background: var(--paper);
-  overflow-x: auto;
 }
 .toolbar-space { flex: 1; }
+.toolbar .btn-primary { white-space: nowrap; }
+@media (max-width: 480px) {
+  /* The one button that moves you forward never gets clipped: on narrow
+     screens it takes its own full-width row under the tools. */
+  .toolbar .btn-primary { flex-basis: 100%; text-align: center; }
+}
 
 .tool {
   display: flex;
@@ -407,7 +436,8 @@ button {
   color: var(--accent);
   font-weight: 600;
   flex-shrink: 0;
-  min-height: 34px;
+  min-height: 44px;
+  min-width: 44px;
 }
 .xray-foot { font-size: 13.5px; color: var(--ink-soft); }
 #thumb-reveal { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; margin: 10px 0; }
@@ -451,6 +481,8 @@ button {
 .done-report h3, .done-leftover h3 { margin: 0 0 8px; font-size: 15.5px; }
 .done-report ul, .done-leftover ul { margin: 0; padding-left: 20px; color: var(--ink-soft); font-size: 14.5px; }
 .done-name { font-size: 13.5px; color: var(--ink-soft); margin: 10px 0 0; }
+.done-report summary { cursor: pointer; min-height: 30px; }
+.done-secret { display: block; padding: 2px 0 4px 14px; overflow-wrap: anywhere; }
 
 .done-leftover {
   text-align: left;
@@ -467,7 +499,15 @@ button {
   justify-content: center;
   flex-wrap: wrap;
   font-size: 14.5px;
-  margin-bottom: 18px;
+  margin: 0 0 18px;
+  border: none;
+  padding: 0;
+}
+.fmt-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
 }
 .done-size { color: var(--ink-soft); }
 

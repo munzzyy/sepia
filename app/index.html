@@ -111,6 +111,11 @@
     </footer>
   </div>
 
+  <p class="locale-line">
+    <label><span class="sr-only" data-i18n>Language</span>
+      <select id="locale-pick"></select>
+    </label>
+  </p>
   <p id="about-site" class="about-line" hidden><a href="https://github.com/munzzyy/sepia" data-i18n>About Sepia</a></p>
 </section>
 
@@ -120,6 +125,8 @@
     <button id="btn-close" class="icon-btn" data-i18n-attr="aria-label" aria-label="Close this image" title="Close">✕</button>
     <div class="risk-pill" id="risk-pill" role="status"></div>
     <div class="top-actions">
+      <button id="btn-del-box" class="btn-ghost del-chip" hidden data-i18n>Remove box</button>
+      <button id="btn-skip" class="btn-ghost" hidden data-testid="skip"></button>
       <button id="btn-undo" class="icon-btn" data-i18n-attr="aria-label" aria-label="Undo" disabled>↶</button>
       <button id="btn-redo" class="icon-btn" data-i18n-attr="aria-label" aria-label="Redo" disabled>↷</button>
       <button id="btn-xray" class="btn-ghost" data-testid="open-xray" aria-expanded="false" data-i18n>X-ray</button>
@@ -168,6 +175,7 @@
       <img id="thumb-img" alt="" data-i18n-attr="alt">
     </div>
     <p class="xray-foot" data-i18n>All of this disappears when you export. Redactions handle what is visible in the pixels.</p>
+    <button id="btn-xray-export" class="btn-primary xray-export" data-testid="xray-export" data-i18n>Remove all of this &amp; export</button>
   </aside>
 </section>
 

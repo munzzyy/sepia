@@ -143,7 +143,25 @@ function parseIfd(bytes, off, le, ifdName, out, visited) {
     const size = TYPE_SIZES[type] * valCount;
     const valOff = size <= 4 ? e + 8 : u32(bytes, e + 8, le);
     if (valOff === null) continue;
-    const value = readValue(bytes, type, valCount, valOff, le);
+    let value = readValue(bytes, type, valCount, valOff, le);
+    // UserComment leads with an 8-byte charset id; show its text, not a
+    // byte dump.
+    if (tag === 0x9286 && type === 7 && Array.isArray(value) && value.length > 8) {
+      const charset = String.fromCharCode(...value.slice(0, 5));
+      const body = value.slice(8).filter((b) => b !== 0);
+      if (charset === "ASCII" || charset === "UNICO" || value.slice(0, 8).every((b) => b === 0)) {
+        try {
+          value = new TextDecoder(charset === "UNICO" ? "utf-16be" : "utf-8")
+            .decode(Uint8Array.from(value.slice(8)))
+            .replace(/\0+/g, "")
+            .trim();
+        } catch {
+          value = `${body.length} bytes`;
+        }
+      } else {
+        value = `${body.length} bytes`;
+      }
+    }
     if (tag === 0x8769 && ifdName === "0") {
       subExif = value;
       continue;

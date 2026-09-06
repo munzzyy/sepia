@@ -50,6 +50,61 @@ for (const file of readdirSync(jsDir)) {
   }
 }
 
+// X-ray item labels and details are assembled dynamically in inspect.js and
+// translated at render time, so the t("...") scan cannot see them. Kept as
+// an explicit list; ui.js renderXray/renderProof route each through t().
+const XRAY_STRINGS = [
+  "Location",
+  "Location fields",
+  "Hidden preview image",
+  "Data after the image ends",
+  "IPTC metadata",
+  "XMP metadata",
+  "Extended XMP",
+  "Multi-picture data",
+  "Comment",
+  "JFIF header",
+  "Adobe encoder marker",
+  "Color profile",
+  "Camera settings",
+  "Other Exif fields",
+  "Exif block",
+  "Exif data",
+  "Unrecognized data blocks",
+  "File structure unreadable",
+  "Exif field list truncated",
+  "Last modified",
+  "Camera make",
+  "Camera model",
+  "Software",
+  "Modified",
+  "Taken",
+  "Digitized",
+  "Artist",
+  "Copyright",
+  "Description",
+  "Owner name",
+  "Body serial number",
+  "Lens serial number",
+  "Lens make",
+  "Lens model",
+  "Lens specification",
+  "Image unique ID",
+  "User comment",
+  "Time zone",
+  "Time zone (original)",
+  "GPS date",
+  "GPS time",
+  "Exact coordinates of where this image was taken.",
+  "A second, smaller copy of the photo stored inside the file. Croppings and edits sometimes leave the original preview behind.",
+  "Phones in motion-photo mode append a short video clip here. Anything after the image marker travels with the file, invisible in every viewer.",
+  "News-style metadata: often creator name, captions, and locations.",
+  "Vendor-specific data this X-ray cannot itemize. Re-encoding removes it all the same.",
+  "Treat the report above as a minimum, not a full accounting.",
+  "AI generation prompt and settings.",
+];
+for (const s of XRAY_STRINGS) strings.add(s);
+
 const { es } = await import(path.join(ROOT, "app", "js", "strings-es.js"));
 const missing = [...strings].filter((s) => !(s in es));
 const stale = Object.keys(es).filter((k) => !strings.has(k));

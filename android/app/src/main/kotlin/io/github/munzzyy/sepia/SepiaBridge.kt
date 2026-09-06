@@ -23,7 +23,7 @@ class SepiaBridge(private val activity: MainActivity) {
     }.getOrNull() ?: "unknown"
 
     @JavascriptInterface
-    fun sharedImageToken(): String = activity.sharedToken()
+    fun sharedImageTokens(): String = activity.sharedTokensJson()
 
     // Scrubbed bytes to the system share sheet. The file lands in a scoped
     // cache directory only the FileProvider exposes, named by the scrubbed
@@ -62,10 +62,12 @@ class SepiaBridge(private val activity: MainActivity) {
     @JavascriptInterface
     fun saveImage(b64: String, mime: String, name: String) {
         val bytes = runCatching { Base64.decode(b64, Base64.DEFAULT) }.getOrNull() ?: return
+        // Plain Pictures/: a gallery album literally named after a scrubbing
+        // tool would advertise exactly which photos were sanitized.
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, sanitize(name))
             put(MediaStore.Images.Media.MIME_TYPE, mime)
-            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Sepia")
+            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/")
         }
         val resolver = activity.contentResolver
         val ok = runCatching {

@@ -5,8 +5,8 @@ anadido por el modo de foto en movimiento.
 Sepia es el paso antes de enviar:
 
 * Radiografia: ve todo lo que el archivo dice de ti, ordenado por gravedad.
-* Redaccion: tinta y pixelado quemados en los pixeles, mas recorte. Detecta
-  codigos QR y ofrece taparlos.
+* Redaccion: tinta y pixelado quemados en los pixeles, mas recorte. En dispositivos
+  compatibles, detecta codigos QR y ofrece taparlos.
 * Prueba: el archivo exportado se recodifica desde cero y Sepia vuelve a
   abrir su propio resultado para ensenarte que queda (y que no) dentro.
 

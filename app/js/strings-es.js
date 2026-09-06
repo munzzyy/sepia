@@ -116,7 +116,6 @@ export const es = {
   "{count} serious leaks in this file": "{count} filtraciones graves en este archivo",
   "{count} revealing details in this file": "{count} detalles reveladores en este archivo",
   "No metadata leaks found": "Sin filtraciones de metadatos",
-  "Metadata not itemized for this format": "Metadatos no detallados para este formato",
   "This format's metadata is not itemized here. Re-encoding on export strips it all the same.":
     "Los metadatos de este formato no se detallan aquí. La recodificación al exportar los quita de todos modos.",
   "This file could not be fully read. Treat the list below as a minimum.":
@@ -127,7 +126,6 @@ export const es = {
   "Copy": "Copiar",
   "Show": "Mostrar",
   "The hidden preview image found inside the file": "La imagen de vista previa oculta encontrada dentro del archivo",
-  "Coordinates copied": "Coordenadas copiadas",
 
   "The exported file was re-opened and re-scanned. Nothing above harmless technical detail remains.":
     "El archivo exportado se volvió a abrir y a escanear. No queda nada por encima de detalle técnico inofensivo.",
@@ -135,19 +133,13 @@ export const es = {
     "El archivo exportado se volvió a escanear y algo sigue dentro. Detalles abajo.",
   "Preview of the scrubbed image": "Vista previa de la imagen limpia",
   "{count} technical fields": "{count} campos técnicos",
-  "{count} area(s) permanently covered": "{count} zona(s) cubiertas permanentemente",
   "Everything outside the crop": "Todo lo que quedó fuera del recorte",
   "Nothing needed removing; the file was re-encoded anyway.":
     "No hacía falta quitar nada; el archivo se recodificó de todos modos.",
-  "Saved as {name}. The original name ({orig}) stays with the original.":
-    "Guardado como {name}. El nombre original ({orig}) se queda con el original.",
-  "Saved as {name}.": "Guardado como {name}.",
-
+  
   "Could not open this image. HEIC and RAW files need converting first; sharing from your gallery usually converts automatically.":
     "No se pudo abrir esta imagen. Los archivos HEIC y RAW necesitan convertirse primero; compartir desde tu galería suele convertirlos automáticamente.",
   "That does not look like an image.": "Eso no parece una imagen.",
-  "A sample photo with everything wrong with it. Open the X-ray.":
-    "Una foto de ejemplo con todo lo que puede salir mal. Abre la radiografía.",
   "The sample image is missing.": "Falta la imagen de ejemplo.",
   "Could not read the shared image.": "No se pudo leer la imagen compartida.",
   "{count} scannable code(s) found. Tap the outline to cover one.":
@@ -169,7 +161,6 @@ export const es = {
     "Tus coberturas aún no se exportan. Toca cerrar otra vez para descartarlas.",
   "Sharing is not available here, so it downloaded instead.":
     "Compartir no está disponible aquí, así que se descargó en su lugar.",
-  "Saved to your photos": "Guardado en tus fotos",
   "Downloaded": "Descargado",
   "Next image ({count} left)": "Siguiente imagen (quedan {count})",
   "B adds a box. Tab cycles boxes and found codes. Arrows move, Shift with arrows resizes, Delete removes, + and - zoom, 0 fits.":
@@ -180,8 +171,6 @@ export const es = {
     "El borrador de recorte cubre el {pct}% central de la imagen. Las flechas lo mueven, Shift y flechas cambian su tamaño, luego Aplicar recorte.",
   "Export format": "Formato de exportación",
   "Keeping {where}": "Conservando {where}",
-  "Nothing on the canvas yet. Press B to add a cover box.":
-    "Todavía no hay nada en el lienzo. Pulsa B para añadir un recuadro de cobertura.",
   "Nothing to redo": "Nada que rehacer",
   "Nothing to undo": "Nada que deshacer",
   "Re-exported as {fmt}, {size}. {verdict}": "Reexportado como {fmt}, {size}. {verdict}",
@@ -190,4 +179,84 @@ export const es = {
   "Undone": "Deshecho",
   "{tool} box {n} of {total}: {where}": "Recuadro de {tool} {n} de {total}: {where}",
   "{x}% across, {y}% down, covering {w}% by {h}%": "{x}% a lo ancho, {y}% hacia abajo, cubriendo {w}% por {h}%",
+  "1 serious leak in this file": "1 filtración grave en este archivo",
+  "1 revealing detail in this file": "1 detalle revelador en este archivo",
+  "A sample photo with everything wrong with it. This list is what it leaks.":
+    "Una foto de ejemplo con todo lo que puede salir mal. Esta lista es lo que filtra.",
+  "Can't list what's inside this kind of file": "No se puede listar lo que lleva este tipo de archivo",
+  "Closed the image after a long time in the background, for privacy.":
+    "La imagen se cerró tras mucho tiempo en segundo plano, por privacidad.",
+  "Coordinates copied. Careful: clipboards can be synced or kept in history.":
+    "Coordenadas copiadas. Ojo: el portapapeles puede sincronizarse o guardar historial.",
+  "Language": "Idioma",
+  "No more images in the queue.": "No quedan imágenes en la cola.",
+  "Remove all of this & export": "Quitar todo esto y exportar",
+  "Remove box": "Quitar recuadro",
+  "Scrubbing…": "Limpiando…",
+  "Skip ({count} left)": "Saltar (quedan {count})",
+  "This file looks damaged or cut short; it could not be opened.":
+    "Este archivo parece dañado o cortado; no se pudo abrir.",
+  "Will be saved as {name}.": "Se guardará como {name}.",
+  "Will be saved as {name}. The original name ({orig}) stays with the original.":
+    "Se guardará como {name}. El nombre original ({orig}) se queda con el original.",
+  "or share an image to Sepia once installed": "o comparte una imagen a Sepia una vez instalada",
+  "{count} area(s) inked over, permanently": "{count} zona(s) cubiertas con tinta, permanentemente",
+  "{count} area(s) pixelated. Pixelation is weaker than ink on text.":
+    "{count} zona(s) pixeladas. Pixelar es más débil que la tinta sobre texto.",
+  "{count} images queued": "{count} imágenes en cola",
+  "{count} queued images will be dropped too.": "También se descartarán {count} imágenes en cola.",
+  "{label}: removed": "{label}: eliminado",
+  "Location": "Ubicación",
+  "Location fields": "Campos de ubicación",
+  "Hidden preview image": "Imagen de vista previa oculta",
+  "Data after the image ends": "Datos después de donde termina la imagen",
+  "IPTC metadata": "Metadatos IPTC",
+  "XMP metadata": "Metadatos XMP",
+  "Extended XMP": "XMP extendido",
+  "Multi-picture data": "Datos de múltiples imágenes",
+  "Comment": "Comentario",
+  "JFIF header": "Cabecera JFIF",
+  "Adobe encoder marker": "Marcador del codificador Adobe",
+  "Color profile": "Perfil de color",
+  "Camera settings": "Ajustes de cámara",
+  "Other Exif fields": "Otros campos Exif",
+  "Exif block": "Bloque Exif",
+  "Exif data": "Datos Exif",
+  "Unrecognized data blocks": "Bloques de datos no reconocidos",
+  "File structure unreadable": "Estructura del archivo ilegible",
+  "Exif field list truncated": "Lista de campos Exif truncada",
+  "Last modified": "Última modificación",
+  "Camera make": "Marca de la cámara",
+  "Camera model": "Modelo de la cámara",
+  "Software": "Software",
+  "Modified": "Modificado",
+  "Taken": "Tomada",
+  "Digitized": "Digitalizada",
+  "Artist": "Autor",
+  "Copyright": "Copyright",
+  "Description": "Descripción",
+  "Owner name": "Nombre del dueño",
+  "Body serial number": "Número de serie del cuerpo",
+  "Lens serial number": "Número de serie del objetivo",
+  "Lens make": "Marca del objetivo",
+  "Lens model": "Modelo del objetivo",
+  "Lens specification": "Especificación del objetivo",
+  "Image unique ID": "ID único de la imagen",
+  "User comment": "Comentario del usuario",
+  "Time zone": "Zona horaria",
+  "Time zone (original)": "Zona horaria (original)",
+  "GPS date": "Fecha GPS",
+  "GPS time": "Hora GPS",
+  "Exact coordinates of where this image was taken.": "Coordenadas exactas de dónde se tomó esta imagen.",
+  "A second, smaller copy of the photo stored inside the file. Croppings and edits sometimes leave the original preview behind.":
+    "Una segunda copia más pequeña de la foto guardada dentro del archivo. Los recortes y ediciones a veces dejan atrás la vista previa original.",
+  "Phones in motion-photo mode append a short video clip here. Anything after the image marker travels with the file, invisible in every viewer.":
+    "Los teléfonos en modo foto en movimiento añaden aquí un clip corto de video. Todo lo que va después del marcador de imagen viaja con el archivo, invisible en cualquier visor.",
+  "News-style metadata: often creator name, captions, and locations.":
+    "Metadatos de estilo periodístico: a menudo nombre del creador, pies de foto y ubicaciones.",
+  "Vendor-specific data this X-ray cannot itemize. Re-encoding removes it all the same.":
+    "Datos del fabricante que esta radiografía no puede detallar. La recodificación los quita de todos modos.",
+  "Treat the report above as a minimum, not a full accounting.":
+    "Toma el informe de arriba como un mínimo, no un recuento completo.",
+  "AI generation prompt and settings.": "Prompt y ajustes de generación por IA.",
 };

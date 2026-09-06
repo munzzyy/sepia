@@ -30,12 +30,11 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var assetLoader: WebViewAssetLoader
 
-    // The image a share intent handed over, held in RAM as a (token, uri)
-    // pair. The page fetches /shared/<token> over the asset origin, which
-    // streams the content resolver straight into the renderer: no base64
-    // through the bridge, no copy on disk.
-    private var sharedUri: Uri? = null
-    private var sharedToken: String = ""
+    // Images a share intent handed over, held in RAM as (token, uri) pairs.
+    // The page fetches /shared/<token> over the asset origin, which streams
+    // the content resolver straight into the renderer: no base64 through
+    // the bridge, no copy on disk. Each token serves exactly once.
+    private val shared = mutableListOf<Pair<String, Uri>>()
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -109,54 +108,63 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (takeShared(intent)) {
-            // The page is live; hand the new token over as a call.
+            // The page is live; hand the first new token over as a call
+            // (tokens are hex, safe to embed in a JS string literal).
+            val token = shared.lastOrNull()?.first ?: return
             webView.evaluateJavascript(
-                "globalThis.__sepiaShared && __sepiaShared(\"$sharedToken\")",
+                "globalThis.__sepiaShared && __sepiaShared(\"$token\")",
                 null,
             )
         }
     }
 
-    fun sharedToken(): String = sharedToken
+    fun sharedTokensJson(): String =
+        shared.joinToString(prefix = "[", postfix = "]", separator = ",") { "\"${it.first}\"" }
 
     private fun takeShared(intent: Intent?): Boolean {
-        val uri: Uri? = when (intent?.action) {
+        val uris: List<Uri> = when (intent?.action) {
             Intent.ACTION_SEND ->
-                androidx.core.content.IntentCompat.getParcelableExtra(
-                    intent, Intent.EXTRA_STREAM, Uri::class.java,
+                listOfNotNull(
+                    androidx.core.content.IntentCompat.getParcelableExtra(
+                        intent, Intent.EXTRA_STREAM, Uri::class.java,
+                    ),
                 )
-            Intent.ACTION_VIEW -> intent.data
-            else -> null
+            Intent.ACTION_SEND_MULTIPLE ->
+                androidx.core.content.IntentCompat.getParcelableArrayListExtra(
+                    intent, Intent.EXTRA_STREAM, Uri::class.java,
+                )?.filterNotNull() ?: emptyList()
+            Intent.ACTION_VIEW -> listOfNotNull(intent.data)
+            else -> emptyList()
         }
         // content:// only: a hostile sender must not make this process open
         // file:// paths (least of all Sepia's own cache) or exotic schemes.
-        if (uri == null || uri.scheme != "content") return false
-        if (uri.authority == "io.github.munzzyy.sepia.files") return false
-        sharedUri = uri
-        // Unguessable and single-session: the token only exists in RAM.
-        val raw = ByteArray(16)
-        SecureRandom().nextBytes(raw)
-        sharedToken = raw.joinToString("") { "%02x".format(it) }
+        val safe = uris.filter { it.scheme == "content" && it.authority != "io.github.munzzyy.sepia.files" }
+        if (safe.isEmpty()) return false
+        val rng = SecureRandom()
+        for (uri in safe.take(50)) {
+            val raw = ByteArray(16)
+            rng.nextBytes(raw)
+            shared.add(raw.joinToString("") { "%02x".format(it) } to uri)
+        }
         return true
     }
 
-    // One-shot: the first successful serve invalidates the token, so the
-    // unredacted original does not stay fetchable for the activity's life.
+    // One-shot: a successful serve removes the entry, so the unredacted
+    // original does not stay fetchable for the activity's life.
     private fun serveShared(path: String): WebResourceResponse? {
-        val uri = sharedUri ?: return null
-        if (sharedToken.isEmpty() || path != sharedToken) return null
+        val idx = shared.indexOfFirst { it.first == path }
+        if (idx == -1) return null
+        val (_, uri) = shared[idx]
         return runCatching {
             val mime = contentResolver.getType(uri) ?: "image/*"
             val stream = contentResolver.openInputStream(uri)
-            sharedUri = null
-            sharedToken = ""
+            shared.removeAt(idx)
             WebResourceResponse(mime, null, stream)
         }.getOrNull()
     }
 
     override fun onDestroy() {
-        sharedUri = null
-        sharedToken = ""
+        shared.clear()
         super.onDestroy()
     }
 }

@@ -9,8 +9,8 @@ import { verifyClean } from "./verify.js";
 import { scrubbedName, nameLeaks } from "./names.js";
 import { findCodes, codesSupported } from "./barcodes.js";
 import { createCanvasView } from "./canvasview.js";
-import { isWrapper, wrapperVersion, shareOut, saveOut, sharedToken, onShared } from "./platform.js";
-import { setLocale, resolveLocale, translateDom, t } from "./i18n.js";
+import { isWrapper, wrapperVersion, shareOut, saveOut, sharedTokens, onShared } from "./platform.js";
+import { setLocale, resolveLocale, translateDom, t, LOCALE_CHOICES, currentLocale } from "./i18n.js";
 import { $, toast, announce, showScreen, riskPill, renderXray, setXrayOpen, renderProof, releaseUrls, copyGpsAction } from "./ui.js";
 
 const VERSION = "0.1.0";
@@ -25,10 +25,14 @@ document.addEventListener("securitypolicyviolation", (ev) =>
 // ------------------------------------------------------------------ state
 
 let session = null;
+// Entries are { kind: "file", file } or { kind: "token", token }: shared-in
+// images from the wrapper queue exactly like picked files.
 let queue = [];
 let view = null;
 let tool = "ink";
 let closeArmed = false;
+let xrayAutoOpened = false;
+let lastFormat = null;
 
 const app = {
   get state() {
@@ -73,13 +77,19 @@ async function openBytes(bytes, name = "", mime = "") {
     report = await inspectImage(bytes);
   } catch (err) {
     __sepiaErrors.push(`inspect: ${err}`);
-    report = { ok: false, items: [], counts: { high: 0, medium: 0, low: 0 }, gps: null, thumbnail: null, trailer: null, format: "unknown" };
+    report = { ok: false, analyzed: false, incomplete: true, items: [], counts: { high: 0, medium: 0, low: 0 }, gps: null, thumbnail: null, trailer: null, format: "unknown" };
   }
   let bitmap;
   try {
     bitmap = await decodeBitmap(new Blob([bytes], { type: mime || undefined }));
   } catch {
-    toast(t("Could not open this image. HEIC and RAW files need converting first; sharing from your gallery usually converts automatically."), 6000);
+    const supported = ["jpeg", "png", "webp", "gif", "bmp"].includes(report.format);
+    toast(
+      supported
+        ? t("This file looks damaged or cut short; it could not be opened.")
+        : t("Could not open this image. HEIC and RAW files need converting first; sharing from your gallery usually converts automatically."),
+      6000,
+    );
     return false;
   }
   session = {
@@ -96,9 +106,13 @@ async function openBytes(bytes, name = "", mime = "") {
   riskPill(report);
   renderXray(report, { copyGps: copyGpsAction });
   updateUndoRedo();
+  updateQueueUi();
   view.fit();
   $("canvas").focus({ preventScroll: true });
-  if (report.counts.high > 0) {
+  // The drawer auto-opens for the first worrying image only: on the 40th
+  // photo of a batch it is a speed bump, not news.
+  if (report.counts.high > 0 && !xrayAutoOpened) {
+    xrayAutoOpened = true;
     setXrayOpen(true);
     announce(t("{count} serious leaks found. The X-ray panel lists them.", { count: report.counts.high }));
   } else {
@@ -108,37 +122,53 @@ async function openBytes(bytes, name = "", mime = "") {
   return true;
 }
 
+async function openEntry(entry) {
+  try {
+    if (entry.kind === "file") {
+      return await openBytes(new Uint8Array(await entry.file.arrayBuffer()), entry.file.name, entry.file.type);
+    }
+    const res = await fetch(`/shared/${entry.token}`);
+    if (!res.ok) throw new Error(String(res.status));
+    return await openBytes(new Uint8Array(await res.arrayBuffer()), "", res.headers.get("content-type") || "");
+  } catch (err) {
+    __sepiaErrors.push(`open: ${err}`);
+    toast(t("Could not read the shared image."));
+    return false;
+  }
+}
+
+// Opens the next workable entry, skipping ones that fail to decode.
+async function advanceQueue() {
+  while (queue.length) {
+    const entry = queue.shift();
+    if (await openEntry(entry)) return true;
+  }
+  closeSession();
+  showScreen("start");
+  return false;
+}
+
 async function openFiles(files) {
   const images = [...files].filter((f) => f.type.startsWith("image/") || /\.(jpe?g|png|webp|gif|bmp|avif)$/i.test(f.name));
   if (!images.length) {
     toast(t("That does not look like an image."));
     return;
   }
-  queue = images.slice(1);
-  const first = images[0];
-  await openBytes(new Uint8Array(await first.arrayBuffer()), first.name, first.type);
+  queue = images.map((file) => ({ kind: "file", file }));
+  xrayAutoOpened = false;
+  if (images.length > 1) toast(t("{count} images queued", { count: images.length }));
+  await advanceQueue();
 }
 
 async function openDemo() {
   try {
     const res = await fetch("demo/sample.jpg");
     const bytes = new Uint8Array(await res.arrayBuffer());
+    xrayAutoOpened = false;
     await openBytes(bytes, "IMG_20260214_093122.jpg", "image/jpeg");
-    toast(t("A sample photo with everything wrong with it. Open the X-ray."), 5000);
+    toast(t("A sample photo with everything wrong with it. This list is what it leaks."), 5000);
   } catch {
     toast(t("The sample image is missing."));
-  }
-}
-
-async function openSharedToken(token) {
-  try {
-    const res = await fetch(`/shared/${token}`);
-    if (!res.ok) throw new Error(String(res.status));
-    const bytes = new Uint8Array(await res.arrayBuffer());
-    await openBytes(bytes, "", res.headers.get("content-type") || "");
-  } catch (err) {
-    __sepiaErrors.push(`shared: ${err}`);
-    toast(t("Could not read the shared image."));
   }
 }
 
@@ -150,6 +180,29 @@ function closeSession() {
   riskPill(null);
   setXrayOpen(false);
 }
+
+function resetAll() {
+  closeSession();
+  queue = [];
+  xrayAutoOpened = false;
+  showScreen("start");
+}
+
+// A session left open in a background tab or app is a sensitive image
+// sitting on someone's screen whenever they come back. After long enough,
+// coming back should show the start screen, not the photo.
+const BACKGROUND_CLOSE_MS = 15 * 60 * 1000;
+let hiddenAt = 0;
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    hiddenAt = Date.now();
+    return;
+  }
+  if (session && hiddenAt && Date.now() - hiddenAt > BACKGROUND_CLOSE_MS) {
+    resetAll();
+    toast(t("Closed the image after a long time in the background, for privacy."), 6000);
+  }
+});
 
 // ------------------------------------------------------------------ codes
 
@@ -183,6 +236,12 @@ function updateUndoRedo() {
   $("btn-redo").disabled = session.editor.undone.length === 0;
 }
 
+function updateQueueUi() {
+  const skip = $("btn-skip");
+  skip.hidden = queue.length === 0;
+  if (queue.length) skip.textContent = t("Skip ({count} left)", { count: queue.length });
+}
+
 // Every editor mutation lands here: an export made before this moment no
 // longer matches the canvas, so it must not stay shareable through history
 // navigation or a slow in-flight encode.
@@ -190,12 +249,19 @@ function editorChanged() {
   if (session) session.exported = null;
   exportGen++;
   updateUndoRedo();
+  updateDeleteChip();
 }
 
 // A button that disables itself under the keyboard user's focus strands
 // them on an unfocusable element.
 function rescueFocus() {
   if (document.activeElement?.disabled) $("canvas").focus({ preventScroll: true });
+}
+
+// Touch users cannot press Delete; a selected box gets a visible remove
+// control instead.
+function updateDeleteChip() {
+  $("btn-del-box").hidden = !view?.getSelected();
 }
 
 function setTool(next) {
@@ -214,7 +280,7 @@ function setTool(next) {
 async function runExport() {
   if (!session) return;
   const srcIsPng = session.report.format === "png" || session.report.format === "gif" || session.report.format === "bmp";
-  const type = session.exported?.type || (srcIsPng ? "image/png" : "image/jpeg");
+  const type = session.exported?.type || lastFormat || (srcIsPng ? "image/png" : "image/jpeg");
   if (await reExport(type, Number($("q-slider").value) / 100)) {
     showScreen("done");
     announce($("done-title").textContent);
@@ -227,6 +293,11 @@ let exportGen = 0;
 
 async function reExport(type, quality) {
   const gen = ++exportGen;
+  const btn = $("btn-export");
+  btn.disabled = true;
+  const label = btn.textContent;
+  btn.textContent = t("Scrubbing…");
+  announce(t("Scrubbing…"));
   let blob;
   let bytes;
   try {
@@ -237,16 +308,19 @@ async function reExport(type, quality) {
     __sepiaErrors.push(`export: ${err}`);
     toast(t("Could not encode this image. It may be too large for this device; try cropping first."), 6000);
     return false;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
   }
   if (gen !== exportGen || !session) return false;
   const verify = await verifyClean(bytes);
   if (gen !== exportGen || !session) return false;
   const name = scrubbedName(type);
   session.exported = { blob, bytes, verify, name, type };
+  lastFormat = type;
   renderProof({
     report: session.report,
-    opsCount: paintOps(session.editor).length,
-    cropUsed: !!session.editor.crop,
+    editor: session.editor,
     verify,
     blob,
     name,
@@ -262,9 +336,39 @@ async function reExport(type, quality) {
 function stripWebOnly() {
   for (const node of document.querySelectorAll(".web-only")) node.remove();
   $("about-site").hidden = false;
-  // Phones have no Ctrl+V and no desktop drag; the everyday path is the
-  // share sheet.
-  $("drop-hint").textContent = t("or share a photo to Sepia from any app");
+}
+
+// The intake hint should describe this device, not a desktop.
+function fitHintToDevice() {
+  if (isWrapper()) {
+    $("drop-hint").textContent = t("or share a photo to Sepia from any app");
+  } else if (navigator.maxTouchPoints > 0 && matchMedia("(pointer: coarse)").matches) {
+    $("drop-hint").textContent = t("or share an image to Sepia once installed");
+  }
+}
+
+function buildLocalePicker() {
+  const select = $("locale-pick");
+  for (const { id, label } of LOCALE_CHOICES) {
+    const opt = document.createElement("option");
+    opt.value = id;
+    opt.textContent = label;
+    select.append(opt);
+  }
+  let pref = "auto";
+  try {
+    pref = localStorage.getItem("sepia-locale") || "auto";
+  } catch {}
+  select.value = pref;
+  select.addEventListener("change", () => {
+    try {
+      localStorage.setItem("sepia-locale", select.value);
+    } catch {}
+    setLocale(resolveLocale(select.value));
+    translateDom();
+    fitHintToDevice();
+    updateQueueUi();
+  });
 }
 
 function wireEvents() {
@@ -306,19 +410,32 @@ function wireEvents() {
     kbdHint.hidden = true;
   });
 
+  // Discarding work needs a second tap, whether it is the close button or
+  // the platform back gesture, and the warning names the queue too.
+  const armAndWarn = () => {
+    closeArmed = true;
+    const extra = queue.length ? t(" {count} queued images will be dropped too.", { count: queue.length }) : "";
+    toast(t("Your covers are not exported yet. Tap close again to discard them.") + extra, 4000);
+    setTimeout(() => {
+      closeArmed = false;
+    }, 4000);
+  };
+
   $("btn-close").addEventListener("click", () => {
-    if (session && paintOps(session.editor).length > 0 && !closeArmed) {
-      closeArmed = true;
-      toast(t("Your covers are not exported yet. Tap close again to discard them."), 4000);
-      setTimeout(() => {
-        closeArmed = false;
-      }, 4000);
+    if (session && session.editor.ops.length > 0 && !closeArmed) {
+      armAndWarn();
       return;
     }
     closeArmed = false;
-    closeSession();
-    queue = [];
-    showScreen("start");
+    resetAll();
+  });
+
+  $("btn-skip").addEventListener("click", async () => {
+    if (!(await advanceQueue())) toast(t("No more images in the queue."));
+  });
+
+  $("btn-del-box").addEventListener("click", () => {
+    view.deleteSelected();
   });
 
   $("btn-undo").addEventListener("click", () => {
@@ -360,6 +477,10 @@ function wireEvents() {
     setXrayOpen(false);
     $("btn-xray").focus();
   });
+  $("btn-xray-export").addEventListener("click", () => {
+    setXrayOpen(false);
+    runExport();
+  });
 
   $("btn-export").addEventListener("click", runExport);
 
@@ -380,6 +501,7 @@ function wireEvents() {
   $("q-slider").addEventListener("change", () => reExportAnnounced("image/jpeg"));
 
   $("btn-share").addEventListener("click", async () => {
+    if (!session?.exported) return;
     const ok = await shareOut(session.exported.blob, session.exported.name);
     if (!ok) {
       await saveOut(session.exported.blob, session.exported.name);
@@ -387,23 +509,41 @@ function wireEvents() {
     }
   });
   $("btn-save").addEventListener("click", async () => {
+    if (!session?.exported) return;
     const how = await saveOut(session.exported.blob, session.exported.name);
-    toast(how === "gallery" ? t("Saved to your photos") : t("Downloaded"));
+    // The wrapper's own toast reports the real outcome; a second, blind
+    // "saved!" from here would sometimes be a lie.
+    if (how === "download") toast(t("Downloaded"));
   });
 
   $("btn-again").addEventListener("click", () => {
-    closeSession();
-    queue = [];
-    showScreen("start");
+    if (queue.length && !closeArmed) {
+      armAndWarn();
+      return;
+    }
+    closeArmed = false;
+    resetAll();
   });
-  const nextBtn = $("btn-next");
-  nextBtn.addEventListener("click", async () => {
-    const file = queue.shift();
-    if (file) await openBytes(new Uint8Array(await file.arrayBuffer()), file.name, file.type);
-  });
+  $("btn-next").addEventListener("click", () => advanceQueue());
 
   document.addEventListener("keydown", (ev) => {
-    if (!session || $("screen-edit").hidden) return;
+    if (ev.target.tagName === "INPUT" || ev.target.tagName === "SELECT") return;
+    const onEdit = session && !$("screen-edit").hidden;
+    const onDone = session?.exported && !$("screen-done").hidden;
+    if (onEdit && (ev.ctrlKey || ev.metaKey) && ev.key === "Enter") {
+      ev.preventDefault();
+      runExport();
+      return;
+    }
+    if (onDone && (ev.key === "s" || ev.key === "S")) {
+      $("btn-save").click();
+      return;
+    }
+    if (onDone && (ev.key === "n" || ev.key === "N") && queue.length) {
+      advanceQueue();
+      return;
+    }
+    if (!onEdit) return;
     if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "z") {
       ev.preventDefault();
       if (ev.shiftKey) redo(session.editor);
@@ -422,12 +562,17 @@ function wireEvents() {
     const hash = location.hash;
     if (hash === "#edit" && session) showScreen("edit");
     else if (hash === "#done" && session?.exported) showScreen("done");
-    else if (session) {
-      // Forward to a stale #done (edits since export) lands on the editor.
+    else if (session && !$("screen-edit").hidden && session.editor.ops.length > 0 && !closeArmed) {
+      // The back gesture gets the same second-chance as the close button.
+      history.pushState(null, "", "#edit");
+      armAndWarn();
+    } else if (session && location.hash === "") {
+      closeArmed = false;
+      resetAll();
+    } else if (session) {
       showScreen("edit");
     } else {
-      closeSession();
-      showScreen("start");
+      resetAll();
     }
   });
 }
@@ -445,14 +590,20 @@ new MutationObserver(updateNextButton).observe($("screen-done"), {
 });
 
 async function boot() {
-  setLocale(resolveLocale(localStorage.getItem("sepia-locale") || "auto"));
+  let pref = "auto";
+  try {
+    pref = localStorage.getItem("sepia-locale") || "auto";
+  } catch {}
+  setLocale(resolveLocale(pref));
   translateDom();
+  buildLocalePicker();
 
   if (isWrapper()) {
     stripWebOnly();
   } else if ("serviceWorker" in navigator && location.protocol === "https:") {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
+  fitHintToDevice();
   const ver = $("ver");
   if (ver) ver.textContent = `v${VERSION}${isWrapper() ? ` · app ${wrapperVersion()}` : ""}`;
 
@@ -471,7 +622,7 @@ async function boot() {
       announce(t("Code covered with ink"));
     },
     onChange: editorChanged,
-    onSelect: () => {},
+    onSelect: updateDeleteChip,
     onCropDraft: () => {},
     announce,
   });
@@ -480,24 +631,52 @@ async function boot() {
   setTool("ink");
   showScreen("start");
 
-  onShared((token) => openSharedToken(token));
-  const token = sharedToken();
-  if (token) await openSharedToken(token);
+  // Installed-PWA "open with Sepia" from a file manager.
+  globalThis.launchQueue?.setConsumer?.(async (params) => {
+    const files = [];
+    for (const handle of params.files || []) {
+      try {
+        files.push(await handle.getFile());
+      } catch {}
+    }
+    if (files.length) await openFiles(files);
+  });
+
+  onShared((token) => {
+    queue = [];
+    xrayAutoOpened = false;
+    openEntry({ kind: "token", token });
+  });
+  const tokens = sharedTokens();
+  if (tokens.length) {
+    queue = tokens.map((token) => ({ kind: "token", token }));
+    xrayAutoOpened = false;
+    if (tokens.length > 1) toast(t("{count} images queued", { count: tokens.length }));
+    await advanceQueue();
+  }
 
   // A share_target launch lands with ?share-target=1; the worker parked the
-  // file in the cache for exactly one pickup. On every other boot the same
-  // entry is purged unread, so a crashed pickup cannot leave a shared image
-  // parked in browser storage.
+  // files in the cache for exactly one pickup. On every other boot the same
+  // entries are purged unread, so a crashed pickup cannot leave a shared
+  // image parked in browser storage.
   if ("caches" in globalThis) {
     try {
       const cache = await caches.open("sepia-share");
       const isPickup = new URLSearchParams(location.search).has("share-target");
-      const res = isPickup ? await cache.match("/share-incoming") : null;
-      await cache.delete("/share-incoming");
-      if (res) {
-        const bytes = new Uint8Array(await res.arrayBuffer());
-        await openBytes(bytes, "", res.headers.get("content-type") || "");
+      const keys = await cache.keys();
+      const parked = keys.filter((req) => new URL(req.url).pathname.startsWith("/share-incoming"));
+      const files = [];
+      for (const req of parked) {
+        if (isPickup) {
+          const res = await cache.match(req);
+          if (res) {
+            const blob = await res.blob();
+            files.push(new File([blob], "", { type: res.headers.get("content-type") || "image/*" }));
+          }
+        }
+        await cache.delete(req);
       }
+      if (files.length) await openFiles(files);
       if (isPickup) history.replaceState(null, "", location.pathname);
     } catch (err) {
       __sepiaErrors.push(`share-target: ${err}`);

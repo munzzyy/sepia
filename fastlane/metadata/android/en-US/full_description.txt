@@ -6,8 +6,8 @@ Sepia is the step before you hit send:
 
 * X-ray: see everything the file says about you, ranked by severity. GPS in
   plain words, the hidden thumbnail shown, trailing data called out.
-* Redact: ink and pixelation burned into the pixels, plus crop. QR codes are
-  detected and offered for covering.
+* Redact: ink and pixelation burned into the pixels, plus crop. Where the device supports code
+  detection, QR codes are found and offered for covering.
 * Prove it: the export is re-encoded from scratch, then Sepia re-opens its
   own output and shows you what is (and is not) still inside.
 

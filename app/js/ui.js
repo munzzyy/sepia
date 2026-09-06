@@ -3,6 +3,15 @@
 
 import { t } from "./i18n.js";
 import { headline, gpsWords, severityWord } from "./report.js";
+import { paintOps } from "./editor.js";
+
+function paintOpsSplit(editor) {
+  const ops = editor ? paintOps(editor) : [];
+  return {
+    ink: ops.filter((o) => o.type === "ink").length,
+    pixelate: ops.filter((o) => o.type === "pixelate").length,
+  };
+}
 
 export const $ = (id) => document.getElementById(id);
 
@@ -58,13 +67,19 @@ export function riskPill(report) {
   }
   if (!report.analyzed) {
     el.classList.add("medium");
-    el.textContent = t("Metadata not itemized for this format");
+    el.textContent = t("Can't list what's inside this kind of file");
   } else if (report.counts.high > 0) {
     el.classList.add("high");
-    el.textContent = t("{count} serious leaks in this file", { count: report.counts.high });
+    el.textContent =
+      report.counts.high === 1
+        ? t("1 serious leak in this file")
+        : t("{count} serious leaks in this file", { count: report.counts.high });
   } else if (report.counts.medium > 0) {
     el.classList.add("medium");
-    el.textContent = t("{count} revealing details in this file", { count: report.counts.medium });
+    el.textContent =
+      report.counts.medium === 1
+        ? t("1 revealing detail in this file")
+        : t("{count} revealing details in this file", { count: report.counts.medium });
   } else {
     el.classList.add("clean");
     el.textContent = t("No metadata leaks found");
@@ -98,7 +113,9 @@ export function renderXray(report, actions) {
     const body = document.createElement("div");
     const label = document.createElement("span");
     label.className = "xray-label";
-    label.textContent = item.label + ": ";
+    // Labels and details are a closed set of English strings; translating
+    // at render time keeps the parser layer free of UI concerns.
+    label.textContent = t(item.label) + ": ";
     const value = document.createElement("span");
     value.className = "xray-value";
     value.textContent = item.value;
@@ -106,7 +123,7 @@ export function renderXray(report, actions) {
     if (item.detail) {
       const detail = document.createElement("span");
       detail.className = "xray-detail";
-      detail.textContent = item.detail;
+      detail.textContent = t(item.detail);
       body.append(detail);
     }
     li.append(sev, body);
@@ -167,7 +184,7 @@ export function releaseUrls() {
   $("thumb-reveal").hidden = true;
 }
 
-export function renderProof({ report, opsCount, cropUsed, verify, blob, name, origName }) {
+export function renderProof({ report, editor, verify, blob, name, origName }) {
   const clean = verify.clean;
   const badge = $("done-badge");
   badge.textContent = clean ? "✓" : "!";
@@ -185,27 +202,41 @@ export function renderProof({ report, opsCount, cropUsed, verify, blob, name, or
 
   const removed = $("done-removed");
   removed.textContent = "";
-  const lines = [];
-  // Anything that survived belongs in the leftover box below, never on the
-  // removed list; the two must partition, not overlap.
-  for (const item of report.items.filter(
+  // The values themselves (exact coordinates, names) stay collapsed: this
+  // screen is the one most likely to be visible at share time.
+  const secretItems = report.items.filter(
     (i) => i.severity !== "low" && !verify.leftovers.some((l) => l.id === i.id),
-  )) {
-    lines.push(`${item.label}: ${item.value}`);
+  );
+  for (const item of secretItems) {
+    const li = document.createElement("li");
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = t("{label}: removed", { label: t(item.label) });
+    const value = document.createElement("span");
+    value.className = "done-secret";
+    value.textContent = item.value;
+    details.append(summary, value);
+    li.append(details);
+    removed.append(li);
   }
+  const plain = [];
   const lowCount = report.counts.low;
-  if (lowCount) lines.push(t("{count} technical fields", { count: lowCount }));
-  if (opsCount) lines.push(t("{count} area(s) permanently covered", { count: opsCount }));
-  if (cropUsed) lines.push(t("Everything outside the crop"));
-  if (lines.length === 0) lines.push(t("Nothing needed removing; the file was re-encoded anyway."));
-  for (const text of lines) {
+  if (lowCount) plain.push(t("{count} technical fields", { count: lowCount }));
+  const ops = paintOpsSplit(editor);
+  if (ops.ink) plain.push(t("{count} area(s) inked over, permanently", { count: ops.ink }));
+  if (ops.pixelate)
+    plain.push(t("{count} area(s) pixelated. Pixelation is weaker than ink on text.", { count: ops.pixelate }));
+  if (editor?.crop) plain.push(t("Everything outside the crop"));
+  if (secretItems.length === 0 && plain.length === 0)
+    plain.push(t("Nothing needed removing; the file was re-encoded anyway."));
+  for (const text of plain) {
     const li = document.createElement("li");
     li.textContent = text;
     removed.append(li);
   }
   $("done-name").textContent = origName
-    ? t("Saved as {name}. The original name ({orig}) stays with the original.", { name, orig: origName })
-    : t("Saved as {name}.", { name });
+    ? t("Will be saved as {name}. The original name ({orig}) stays with the original.", { name, orig: origName })
+    : t("Will be saved as {name}.", { name });
 
   const leftoverWrap = $("done-leftover");
   leftoverWrap.hidden = clean;
@@ -230,7 +261,7 @@ export function formatSize(n) {
 export function copyGpsAction(gps) {
   const text = gpsWords(gps);
   navigator.clipboard?.writeText(text).then(
-    () => toast(t("Coordinates copied")),
+    () => toast(t("Coordinates copied. Careful: clipboards can be synced or kept in history.")),
     () => toast(text),
   );
 }

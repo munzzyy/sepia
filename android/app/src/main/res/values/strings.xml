@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Sepia</string>
-    <string name="saved_to_photos">Saved to Pictures/Sepia</string>
+    <string name="saved_to_photos">Saved to Pictures</string>
     <string name="save_failed">Could not save the image</string>
 </resources>

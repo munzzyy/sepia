@@ -31,7 +31,7 @@ function check(name, cond, detail = "") {
 const BRIDGE_STUB = (token) => `window.SepiaNative = {
   platform: () => "android",
   version: () => "e2e",
-  sharedImageToken: () => ${JSON.stringify(token)},
+  sharedImageTokens: () => JSON.stringify(${JSON.stringify(token ? [token] : [])}),
   shareImage: (b64, mime, name) => { window.__shared = { size: b64.length, mime, name }; },
   saveImage: (b64, mime, name) => { window.__saved = { size: b64.length, mime, name }; },
 };`;
