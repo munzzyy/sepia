@@ -263,6 +263,23 @@ async function main() {
     check("pixels: inked area is actually ink", dark(px.inked), JSON.stringify(px.inked));
     check("pixels: untouched area is untouched", !dark(px.corner), JSON.stringify(px.corner));
 
+    // Fractional drag rects must not leave a sub-pixel strip of covered
+    // content along any edge: probe just inside all four borders.
+    const edges = await c.evalJs(
+      `(async () => { const s = __sepiaApi.session();
+        const op = s.editor.ops.find((o) => o.type === "ink");
+        const bmp = await createImageBitmap(s.exported.blob);
+        const cv = new OffscreenCanvas(bmp.width, bmp.height);
+        const ctx = cv.getContext("2d");
+        ctx.drawImage(bmp, 0, 0);
+        const r = op.rect;
+        const at = (x, y) => Array.from(ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data);
+        const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+        return [at(r.x + 0.6, cy), at(r.x + r.w - 0.6, cy), at(cx, r.y + 0.6), at(cx, r.y + r.h - 0.6)]; })()`,
+      true,
+    );
+    check("pixels: every redaction edge is covered to the border", edges.every(dark), JSON.stringify(edges));
+
     // ------------------------------------------- format switch re-exports
     await c.evalJs(`document.querySelector('input[name="fmt"][value="image/png"]').click(); 'ok'`);
     await waitFor(() => c.evalJs("__sepiaApi.session().exported.type === 'image/png'"), "png re-export");

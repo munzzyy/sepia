@@ -183,6 +183,15 @@ function updateUndoRedo() {
   $("btn-redo").disabled = session.editor.undone.length === 0;
 }
 
+// Every editor mutation lands here: an export made before this moment no
+// longer matches the canvas, so it must not stay shareable through history
+// navigation or a slow in-flight encode.
+function editorChanged() {
+  if (session) session.exported = null;
+  exportGen++;
+  updateUndoRedo();
+}
+
 function setTool(next) {
   tool = next;
   for (const btn of document.querySelectorAll(".tool[data-tool]")) {
@@ -200,16 +209,32 @@ async function runExport() {
   if (!session) return;
   const srcIsPng = session.report.format === "png" || session.report.format === "gif" || session.report.format === "bmp";
   const type = session.exported?.type || (srcIsPng ? "image/png" : "image/jpeg");
-  await reExport(type, Number($("q-slider").value) / 100);
-  showScreen("done");
-  announce($("done-title").textContent);
+  if (await reExport(type, Number($("q-slider").value) / 100)) {
+    showScreen("done");
+    announce($("done-title").textContent);
+  }
 }
 
+// Serialized by generation: a slower encode finishing after a newer one
+// must not overwrite the export the user actually asked for last.
+let exportGen = 0;
+
 async function reExport(type, quality) {
-  const canvas = bake(session.bitmap, session.editor);
-  const blob = await encode(canvas, type, type === "image/jpeg" ? quality : undefined);
-  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const gen = ++exportGen;
+  let blob;
+  let bytes;
+  try {
+    const canvas = bake(session.bitmap, session.editor);
+    blob = await encode(canvas, type, type === "image/jpeg" ? quality : undefined);
+    bytes = new Uint8Array(await blob.arrayBuffer());
+  } catch (err) {
+    __sepiaErrors.push(`export: ${err}`);
+    toast(t("Could not encode this image. It may be too large for this device; try cropping first."), 6000);
+    return false;
+  }
+  if (gen !== exportGen || !session) return false;
   const verify = await verifyClean(bytes);
+  if (gen !== exportGen || !session) return false;
   const name = scrubbedName(type);
   session.exported = { blob, bytes, verify, name, type };
   renderProof({
@@ -223,6 +248,7 @@ async function reExport(type, quality) {
   });
   document.querySelector(`input[name="fmt"][value="${type}"]`).checked = true;
   $("q-wrap").hidden = type !== "image/jpeg";
+  return true;
 }
 
 // ------------------------------------------------------------------ boot
@@ -283,12 +309,12 @@ function wireEvents() {
 
   $("btn-undo").addEventListener("click", () => {
     undo(session.editor);
-    updateUndoRedo();
+    editorChanged();
     view.clearSelection();
   });
   $("btn-redo").addEventListener("click", () => {
     redo(session.editor);
-    updateUndoRedo();
+    editorChanged();
     view.render();
   });
 
@@ -305,7 +331,7 @@ function wireEvents() {
     }
     view.setCropDraft(null);
     setTool("ink");
-    updateUndoRedo();
+    editorChanged();
     announce(t("Crop applied. Everything outside the bright area will be removed on export."));
   });
   $("btn-crop-cancel").addEventListener("click", () => {
@@ -352,12 +378,12 @@ function wireEvents() {
       ev.preventDefault();
       if (ev.shiftKey) redo(session.editor);
       else undo(session.editor);
-      updateUndoRedo();
+      editorChanged();
       view.clearSelection();
     } else if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "y") {
       ev.preventDefault();
       redo(session.editor);
-      updateUndoRedo();
+      editorChanged();
       view.render();
     }
   });
@@ -366,7 +392,10 @@ function wireEvents() {
     const hash = location.hash;
     if (hash === "#edit" && session) showScreen("edit");
     else if (hash === "#done" && session?.exported) showScreen("done");
-    else {
+    else if (session) {
+      // Forward to a stale #done (edits since export) lands on the editor.
+      showScreen("edit");
+    } else {
       closeSession();
       showScreen("start");
     }
@@ -408,10 +437,10 @@ async function boot() {
     acceptSuggestion: (s) => {
       session.suggestions = session.suggestions.filter((x) => x !== s);
       addOp(session.editor, "ink", s.rect);
-      updateUndoRedo();
+      editorChanged();
       announce(t("Code covered with ink"));
     },
-    onChange: updateUndoRedo,
+    onChange: editorChanged,
     onSelect: () => {},
     onCropDraft: () => {},
     announce,

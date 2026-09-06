@@ -6,7 +6,7 @@ import { ascii, asciiZ, inflate, startsWith, u32, utf8 } from "./bytes.js";
 const PNG_SIG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
 export function scanPng(bytes) {
-  if (!startsWith(bytes, 0, PNG_SIG)) return { ok: false, chunks: [], trailer: null };
+  if (!startsWith(bytes, 0, PNG_SIG)) return { ok: false, chunks: [], trailer: null, incomplete: true };
   const chunks = [];
   let i = 8;
   let iendEnd = null;
@@ -21,11 +21,16 @@ export function scanPng(bytes) {
       break;
     }
   }
-  const trailer =
-    iendEnd !== null && iendEnd < bytes.length
-      ? { off: iendEnd, len: bytes.length - iendEnd }
-      : null;
-  return { ok: true, chunks, trailer };
+  // No IEND seen means the walk was cut short; whatever remains is treated
+  // as an appended payload instead of silently ignored.
+  const incomplete = iendEnd === null;
+  let trailer = null;
+  if (iendEnd !== null && iendEnd < bytes.length) {
+    trailer = { off: iendEnd, len: bytes.length - iendEnd };
+  } else if (incomplete && i < bytes.length) {
+    trailer = { off: i, len: bytes.length - i };
+  }
+  return { ok: true, chunks, trailer, incomplete };
 }
 
 // Decoded { keyword, text } for a text chunk, inflating when compressed.

@@ -57,12 +57,31 @@ export function utf8(bytes, off, len) {
   }
 }
 
-export async function inflate(bytes) {
+// Bounded: a 1 MB zTXt can inflate to gigabytes, and this runs on hostile
+// files at open time. Everything past the cap is discarded, which is fine
+// for a report that truncates text anyway.
+export async function inflate(bytes, maxOut = 4 * 1024 * 1024) {
   try {
     const ds = new DecompressionStream("deflate");
-    const stream = new Blob([bytes]).stream().pipeThrough(ds);
-    const buf = await new Response(stream).arrayBuffer();
-    return new Uint8Array(buf);
+    const reader = new Blob([bytes]).stream().pipeThrough(ds).getReader();
+    const parts = [];
+    let total = 0;
+    while (total < maxOut) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parts.push(value);
+      total += value.length;
+    }
+    await reader.cancel().catch(() => {});
+    const out = new Uint8Array(Math.min(total, maxOut));
+    let off = 0;
+    for (const p of parts) {
+      const take = Math.min(p.length, out.length - off);
+      out.set(p.subarray(0, take), off);
+      off += take;
+      if (off >= out.length) break;
+    }
+    return out;
   } catch {
     return null;
   }

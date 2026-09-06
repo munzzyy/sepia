@@ -8,7 +8,16 @@ export async function verifyClean(bytes) {
   const report = await inspectImage(bytes);
   const leftovers = report.items.filter((i) => i.severity !== "low");
   return {
-    clean: report.ok && leftovers.length === 0 && !report.trailer && !report.thumbnail && !report.gps,
+    // A verdict only counts when the scan actually covered the format and
+    // reached the end of the file; anything less fails closed.
+    clean:
+      report.ok &&
+      report.analyzed &&
+      !report.incomplete &&
+      leftovers.length === 0 &&
+      !report.trailer &&
+      !report.thumbnail &&
+      !report.gps,
     leftovers,
     report,
   };

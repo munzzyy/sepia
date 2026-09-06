@@ -119,8 +119,12 @@ function readValue(bytes, type, count, off, le) {
 function parseIfd(bytes, off, le, ifdName, out, visited) {
   if (visited.has(off) || off < 0 || off + 2 > bytes.length) return null;
   visited.add(off);
-  const count = u16(bytes, off, le);
-  if (count === null || count > MAX_ENTRIES_PER_IFD) return null;
+  const declared = u16(bytes, off, le);
+  if (declared === null) return null;
+  // A count past the cap still parses up to the cap; discarding the whole
+  // IFD would let a padded file hide real fields behind fake ones.
+  const count = Math.min(declared, MAX_ENTRIES_PER_IFD);
+  if (declared > MAX_ENTRIES_PER_IFD) out.truncated = true;
   let subExif = null;
   let subGps = null;
   for (let i = 0; i < count; i++) {
@@ -129,7 +133,13 @@ function parseIfd(bytes, off, le, ifdName, out, visited) {
     const type = u16(bytes, e + 2, le);
     const valCount = u32(bytes, e + 4, le);
     if (tag === null || type === null || valCount === null) break;
-    if (!TYPE_SIZES[type] || valCount > MAX_VALUE_COUNT) continue;
+    if (!TYPE_SIZES[type]) continue;
+    if (valCount > MAX_VALUE_COUNT) {
+      // Too big to decode (MakerNotes mostly), but its existence is exactly
+      // what the X-ray reports; dropping it silently under-reported.
+      out.fields.push({ ifd: ifdName, tag, type, count: valCount, value: null, oversized: true });
+      continue;
+    }
     const size = TYPE_SIZES[type] * valCount;
     const valOff = size <= 4 ? e + 8 : u32(bytes, e + 8, le);
     if (valOff === null) continue;
@@ -147,6 +157,9 @@ function parseIfd(bytes, off, le, ifdName, out, visited) {
   }
   if (typeof subExif === "number") parseIfd(bytes, subExif, le, "exif", out, visited);
   if (typeof subGps === "number") parseIfd(bytes, subGps, le, "gps", out, visited);
+  // The next-IFD pointer sits after the DECLARED count; past the cap its
+  // position is unknowable, so the chain honestly ends here.
+  if (declared > MAX_ENTRIES_PER_IFD) return null;
   return u32(bytes, off + 2 + count * 12, le);
 }
 
@@ -159,11 +172,11 @@ export function parseTiff(bytes) {
   if (!le && order !== "MM") return { ok: false, fields: [], thumbnail: null };
   if (u16(bytes, 2, le) !== 42) return { ok: false, fields: [], thumbnail: null };
   const ifd0 = u32(bytes, 4, le);
-  const out = { ok: true, fields: [], thumbnail: null };
+  const out = { ok: true, fields: [], thumbnail: null, truncated: false };
   const visited = new Set();
   const ifd1Off = parseIfd(bytes, ifd0, le, "0", out, visited);
   if (typeof ifd1Off === "number" && ifd1Off > 0) {
-    const thumb = { ok: true, fields: [], thumbnail: null };
+    const thumb = { ok: true, fields: [], thumbnail: null, truncated: false };
     parseIfd(bytes, ifd1Off, le, "1", thumb, visited);
     const jpegOff = thumb.fields.find((f) => f.tag === 0x0201)?.value;
     const jpegLen = thumb.fields.find((f) => f.tag === 0x0202)?.value;
@@ -176,6 +189,7 @@ export function parseTiff(bytes) {
       out.thumbnail = bytes.subarray(jpegOff, jpegOff + jpegLen);
     }
     out.fields.push(...thumb.fields.filter((f) => f.tag !== 0x0201 && f.tag !== 0x0202));
+    out.truncated = out.truncated || thumb.truncated;
   }
   for (const f of out.fields) {
     f.name = TAG_NAMES[`${f.ifd}:0x${f.tag.toString(16).padStart(4, "0")}`] || null;

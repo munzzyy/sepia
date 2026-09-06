@@ -42,7 +42,10 @@ export function riskPill(report) {
     el.textContent = "";
     return;
   }
-  if (report.counts.high > 0) {
+  if (!report.analyzed) {
+    el.classList.add("medium");
+    el.textContent = t("Metadata not itemized for this format");
+  } else if (report.counts.high > 0) {
     el.classList.add("high");
     el.textContent = t("{count} serious leaks in this file", { count: report.counts.high });
   } else if (report.counts.medium > 0) {

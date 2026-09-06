@@ -131,6 +131,14 @@ function pushExifItems(items, tiff, out) {
         "A second, smaller copy of the photo stored inside the file. Croppings and edits sometimes leave the original preview behind.",
     });
   }
+  if (tiff.truncated) {
+    items.push({
+      id: "exif:truncated",
+      severity: "medium",
+      label: "Exif field list truncated",
+      value: "more fields exist than could be read",
+    });
+  }
 }
 
 function xmpItem(items, text) {
@@ -155,6 +163,8 @@ async function inspectJpeg(bytes, out) {
     return;
   }
   const items = out.items;
+  let unknownApp = 0;
+  let unknownAppBytes = 0;
   for (const seg of scan.segments) {
     switch (seg.kind) {
       case "exif": {
@@ -194,7 +204,36 @@ async function inspectJpeg(bytes, out) {
       case "jfif":
         items.push({ id: "jfif", severity: "low", label: "JFIF header", value: "standard" });
         break;
+      case "adobe":
+        items.push({ id: "adobe", severity: "low", label: "Adobe encoder marker", value: "standard" });
+        break;
+      case "app":
+        // Vendor blocks (Samsung SEF and friends) carry real data; an
+        // unrecognized APPn must show up, not silently vanish. "other"
+        // covers structural markers (DQT, SOF, SOS), which are the image.
+        unknownApp++;
+        unknownAppBytes += seg.payloadLen;
+        break;
     }
+  }
+  if (unknownApp) {
+    items.push({
+      id: "app-unknown",
+      severity: "medium",
+      label: "Unrecognized data blocks",
+      value: `${unknownApp} segment(s), ${unknownAppBytes.toLocaleString()} bytes`,
+      detail: "Vendor-specific data this X-ray cannot itemize. Re-encoding removes it all the same.",
+    });
+  }
+  if (scan.incomplete) {
+    out.incomplete = true;
+    items.unshift({
+      id: "incomplete",
+      severity: "high",
+      label: "File structure unreadable",
+      value: "the scan could not reach the end of the image",
+      detail: "Treat the report above as a minimum, not a full accounting.",
+    });
   }
   if (scan.trailer) {
     out.trailer = { len: scan.trailer.len, kind: sniffTrailer(bytes, scan.trailer) };
@@ -243,6 +282,15 @@ async function inspectPng(bytes, out) {
       items.push({ id: "icc", severity: "low", label: "Color profile", value: "ICC profile" });
     }
   }
+  if (scan.incomplete) {
+    out.incomplete = true;
+    items.unshift({
+      id: "incomplete",
+      severity: "high",
+      label: "File structure unreadable",
+      value: "the scan could not reach the end of the image",
+    });
+  }
   if (scan.trailer) {
     out.trailer = { len: scan.trailer.len, kind: "unidentified data" };
     items.unshift({
@@ -270,6 +318,24 @@ async function inspectWebp(bytes, out) {
       out.items.push({ id: "icc", severity: "low", label: "Color profile", value: "ICC profile" });
     }
   }
+  if (scan.incomplete) {
+    out.incomplete = true;
+    out.items.unshift({
+      id: "incomplete",
+      severity: "high",
+      label: "File structure unreadable",
+      value: "the scan could not reach the end of the image",
+    });
+  }
+  if (scan.trailer) {
+    out.trailer = { len: scan.trailer.len, kind: "unidentified data" };
+    out.items.unshift({
+      id: "trailer",
+      severity: "high",
+      label: "Data after the image ends",
+      value: `${scan.trailer.len.toLocaleString()} bytes appended`,
+    });
+  }
 }
 
 // One naive byte scan; ISOBMFF is a tree we deliberately do not parse.
@@ -287,6 +353,8 @@ function inspectIsobmff(bytes, out) {
   }
 }
 
+const ANALYZED_FORMATS = new Set(["jpeg", "png", "webp"]);
+
 export async function inspectImage(bytes) {
   const out = {
     format: sniffFormat(bytes),
@@ -296,6 +364,10 @@ export async function inspectImage(bytes) {
     gps: null,
     thumbnail: null,
     trailer: null,
+    incomplete: false,
+    // False means "this X-ray cannot itemize the format": the UI must say
+    // so instead of showing a confident empty report.
+    analyzed: ANALYZED_FORMATS.has(sniffFormat(bytes)),
   };
   if (out.format === "jpeg") await inspectJpeg(bytes, out);
   else if (out.format === "png") await inspectPng(bytes, out);

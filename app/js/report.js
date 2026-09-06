@@ -10,6 +10,10 @@ export function gpsWords(gps) {
 
 export function headline(report) {
   if (!report.ok) return t("Could not read this file's structure. Re-encoding will still strip whatever is in it.");
+  if (!report.analyzed)
+    return t("This format's metadata is not itemized here. Re-encoding on export strips it all the same.");
+  if (report.incomplete)
+    return t("This file could not be fully read. Treat the list below as a minimum.");
   if (report.gps) return t("This image says exactly where it was taken.");
   if (report.trailer) return t("This file carries hidden data after the image ends.");
   if (report.thumbnail) return t("This file hides a second preview image inside.");

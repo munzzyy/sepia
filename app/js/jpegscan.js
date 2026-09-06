@@ -13,19 +13,20 @@ const SIG_IPTC = sigBytes("Photoshop 3.0\0");
 const SIG_JFIF = sigBytes("JFIF\0");
 
 function classify(marker, bytes, payloadOff) {
-  if (marker === 0xe0 && startsWith(bytes, payloadOff, SIG_JFIF)) return "jfif";
-  if (marker === 0xe1) {
+  if (marker >= 0xe0 && marker <= 0xef) {
+    // Signatures are probed on every APPn, not just their usual homes: an
+    // Exif block in APP2 identifies its owner exactly as well as in APP1.
     if (startsWith(bytes, payloadOff, SIG_EXIF)) return "exif";
     if (startsWith(bytes, payloadOff, SIG_XMP)) return "xmp";
     if (startsWith(bytes, payloadOff, SIG_XMP_EXT)) return "xmp-ext";
-  }
-  if (marker === 0xe2) {
     if (startsWith(bytes, payloadOff, SIG_ICC)) return "icc";
     if (startsWith(bytes, payloadOff, SIG_MPF)) return "mpf";
+    if (startsWith(bytes, payloadOff, SIG_IPTC)) return "iptc";
+    if (marker === 0xe0 && startsWith(bytes, payloadOff, SIG_JFIF)) return "jfif";
+    if (marker === 0xee) return "adobe";
+    return "app";
   }
-  if (marker === 0xed && startsWith(bytes, payloadOff, SIG_IPTC)) return "iptc";
   if (marker === 0xfe) return "comment";
-  if (marker >= 0xe0 && marker <= 0xef) return "app";
   return "other";
 }
 
@@ -53,14 +54,18 @@ function skipEntropy(bytes, off) {
   return null;
 }
 
-// Returns { ok, segments, eoiEnd, trailer } where segments carry
+// Returns { ok, segments, eoiEnd, trailer, incomplete } where segments carry
 // { marker, kind, off, len, payloadOff, payloadLen } and trailer is
-// { off, len } for any bytes past the final EOI marker.
+// { off, len } for any bytes past the final EOI marker. A walk that never
+// reaches an EOI reports incomplete plus everything after the last parsed
+// offset as the trailer: failing open here would let one malformed marker
+// hide an appended payload from the report.
 export function scanJpeg(bytes) {
-  if (!startsWith(bytes, 0, [0xff, 0xd8])) return { ok: false, segments: [], trailer: null };
+  if (!startsWith(bytes, 0, [0xff, 0xd8])) return { ok: false, segments: [], trailer: null, incomplete: true };
   const segments = [];
   let i = 2;
   let eoiEnd = null;
+  let broke = false;
   while (i + 1 < bytes.length) {
     if (bytes[i] !== 0xff) {
       // Garbage between segments; tolerate a small run, then give up.
@@ -81,10 +86,16 @@ export function scanJpeg(bytes) {
       continue;
     }
     const len = u16(bytes, i + 2);
-    if (len === null || len < 2) break;
+    if (len === null || len < 2) {
+      broke = true;
+      break;
+    }
     const payloadOff = i + 4;
     const payloadLen = len - 2;
-    if (payloadOff + payloadLen > bytes.length) break;
+    if (payloadOff + payloadLen > bytes.length) {
+      broke = true;
+      break;
+    }
     segments.push({
       marker,
       kind: classify(marker, bytes, payloadOff),
@@ -96,15 +107,21 @@ export function scanJpeg(bytes) {
     i = i + 2 + len;
     if (marker === 0xda) {
       const next = skipEntropy(bytes, i);
-      if (next === null) break;
+      if (next === null) {
+        i = bytes.length;
+        break;
+      }
       i = next;
     }
   }
-  const trailer =
-    eoiEnd !== null && eoiEnd < bytes.length
-      ? { off: eoiEnd, len: bytes.length - eoiEnd }
-      : null;
-  return { ok: true, segments, eoiEnd, trailer };
+  const incomplete = eoiEnd === null;
+  let trailer = null;
+  if (eoiEnd !== null && eoiEnd < bytes.length) {
+    trailer = { off: eoiEnd, len: bytes.length - eoiEnd };
+  } else if (broke && i < bytes.length) {
+    trailer = { off: i, len: bytes.length - i };
+  }
+  return { ok: true, segments, eoiEnd, trailer, incomplete };
 }
 
 // The Exif payload minus its "Exif\0\0" prefix, as a subarray into the file.

@@ -116,6 +116,13 @@ export const es = {
   "{count} serious leaks in this file": "{count} filtraciones graves en este archivo",
   "{count} revealing details in this file": "{count} detalles reveladores en este archivo",
   "No metadata leaks found": "Sin filtraciones de metadatos",
+  "Metadata not itemized for this format": "Metadatos no detallados para este formato",
+  "This format's metadata is not itemized here. Re-encoding on export strips it all the same.":
+    "Los metadatos de este formato no se detallan aquí. La recodificación al exportar los quita de todos modos.",
+  "This file could not be fully read. Treat the list below as a minimum.":
+    "Este archivo no se pudo leer por completo. Toma la lista de abajo como un mínimo.",
+  "Could not encode this image. It may be too large for this device; try cropping first.":
+    "No se pudo codificar esta imagen. Puede ser demasiado grande para este dispositivo; prueba recortarla primero.",
   "Nothing found beyond the pixels themselves.": "No se encontró nada más allá de los propios píxeles.",
   "Copy": "Copiar",
   "Show": "Mostrar",
