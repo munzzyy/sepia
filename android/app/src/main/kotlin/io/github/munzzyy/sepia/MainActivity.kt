@@ -98,6 +98,10 @@ class MainActivity : ComponentActivity() {
             }
         })
 
+        // The previous session's shared export has served its purpose; the
+        // privacy page promises it does not outlive the next app start.
+        runCatching { java.io.File(cacheDir, "shared_out").deleteRecursively() }
+
         takeShared(intent)
         webView.loadUrl(START_URL)
     }

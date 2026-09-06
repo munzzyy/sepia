@@ -121,6 +121,11 @@ try {
   execFileSync("exiftool", ["-ver"], { stdio: "pipe" });
 } catch {
   hasExiftool = false;
+  console.log("  !!   exiftool NOT INSTALLED: the external cross-check will NOT run");
+  if (process.env.CI) {
+    console.error("CI requires exiftool so the cross-check cannot silently vanish");
+    process.exit(1);
+  }
 }
 
 async function main() {

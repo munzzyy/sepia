@@ -29,8 +29,8 @@ export const es = {
   "Highlighter smears and crops done in the wrong app leave the covered text recoverable. Sepia burns redactions into the pixels and re-encodes everything.":
     "Los tachones de marcador y los recortes hechos en la app equivocada dejan el texto recuperable. Sepia quema las coberturas en los píxeles y recodifica todo.",
   "Codes you forgot about": "Códigos que olvidaste",
-  "Boarding passes, tickets, parcel labels. The QR code in your screenshot holds more than the text next to it. Sepia finds codes and offers to cover them.":
-    "Pases de abordar, boletos, etiquetas de paquetes. El código QR de tu captura guarda más que el texto de al lado. Sepia encuentra los códigos y ofrece taparlos.",
+  "Boarding passes, tickets, parcel labels. The QR code in your screenshot holds more than the text next to it. On devices that support code detection, Sepia finds them and offers to cover them.":
+    "Pases de abordar, boletos, etiquetas de paquetes. El código QR de tu captura guarda más que el texto de al lado. En dispositivos que soportan detección de códigos, Sepia los encuentra y ofrece taparlos.",
   "It shows its work": "Muestra su trabajo",
   "Every scrubber promises a clean file. Sepia re-opens the finished file and runs the same X-ray on it that it ran on the original, then shows you the result. If anything survived, you would see it listed, not a green checkmark on faith.":
     "Todo limpiador promete un archivo limpio. Sepia vuelve a abrir el archivo terminado y le pasa la misma radiografía que al original, y te enseña el resultado. Si algo sobreviviera, lo verías en la lista, no una palomita verde por fe.",
@@ -54,8 +54,8 @@ export const es = {
   "No. There is no server to upload to. The page never opens a connection except to fetch its own code from this site, and the Android app cannot open connections at all.":
     "No. No hay servidor al que subirla. La página solo abre conexiones para traer su propio código de este sitio, y la app de Android no puede abrir conexiones en absoluto.",
   "Why not just screenshot the photo?": "¿Por qué no simplemente capturar la pantalla?",
-  "A screenshot does drop the original metadata, but it also drops quality, keeps whatever was visible, and your screenshot tool may write its own timestamps and file names that say when and where you took it. Sepia keeps full quality, covers what you choose, and gives the file a name that says nothing.":
-    "Una captura sí pierde los metadatos originales, pero también pierde calidad, conserva todo lo visible, y tu herramienta de capturas puede escribir sus propias marcas de tiempo y nombres de archivo que dicen cuándo y dónde la tomaste. Sepia conserva la calidad completa, tapa lo que elijas y le da al archivo un nombre que no dice nada.",
+  "A screenshot does drop the original metadata, but it also drops resolution, keeps whatever was visible, and your screenshot tool may write its own timestamps and file names that say when and where you took it. Sepia keeps the full resolution, lets you pick the quality trade-off, covers what you choose, and gives the file a name that says nothing.":
+    "Una captura sí pierde los metadatos originales, pero también pierde resolución, conserva todo lo visible, y tu herramienta de capturas puede escribir sus propias marcas de tiempo y nombres de archivo que dicen cuándo y dónde la tomaste. Sepia conserva la resolución completa, te deja elegir el balance de calidad, tapa lo que elijas y le da al archivo un nombre que no dice nada.",
   "What happens to the hidden video in motion photos?": "¿Qué pasa con el video oculto de las fotos en movimiento?",
   "Re-encoding keeps only the pixels you see, so the appended clip is gone from the output. The X-ray warns you it was there, so you know what the original still carries.":
     "La recodificación conserva solo los píxeles que ves, así que el clip añadido desaparece del resultado. La radiografía te avisa que estaba ahí, para que sepas qué sigue cargando el original.",

@@ -172,7 +172,11 @@ export function renderProof({ report, opsCount, cropUsed, verify, blob, name, or
   const removed = $("done-removed");
   removed.textContent = "";
   const lines = [];
-  for (const item of report.items.filter((i) => i.severity !== "low")) {
+  // Anything that survived belongs in the leftover box below, never on the
+  // removed list; the two must partition, not overlap.
+  for (const item of report.items.filter(
+    (i) => i.severity !== "low" && !verify.leftovers.some((l) => l.id === i.id),
+  )) {
     lines.push(`${item.label}: ${item.value}`);
   }
   const lowCount = report.counts.low;

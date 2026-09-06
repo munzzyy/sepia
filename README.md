@@ -31,14 +31,18 @@ XML.
 
 ## Check the claims, don't take them
 
-`aapt2 dump permissions sepia.apk` prints no permissions. The CSP on the
-web app allows same-origin only. `npm test` runs the unit suite, which
-includes cross-checks of the Exif parser against exiftool and negative
-controls that feed deliberately dirty files through every "clean" verdict,
-so a silently broken parser fails tests instead of faking a clean scrub.
-`npm run e2e` goes further: it drives the real app in Chromium, redacts,
-exports, and then verifies the output outside the app with independent
-parsers, exiftool, and pixel probes on the covered region.
+`aapt2 dump permissions sepia.apk` prints exactly one line: androidx's
+internal not-exported marker, which grants nothing. No INTERNET, no
+storage, no anything, and CI fails the build if a permission ever appears.
+The CSP on the web app allows same-origin only. `npm test` runs the unit
+suite, which cross-checks the Exif parser against exiftool and feeds
+deliberately dirty files through every "clean" verdict, so a silently
+broken parser fails tests instead of faking a clean scrub. `npm run e2e`
+drives the real app in Chromium, redacts, exports, and then checks the
+output outside the app: the parsers re-run in node against the exported
+bytes, exiftool reads the same file (the suite says so loudly if exiftool
+is missing), and pixel probes confirm the covered region is covered to
+every edge.
 
 ## What it won't do
 

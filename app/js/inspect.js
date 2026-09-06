@@ -338,18 +338,24 @@ async function inspectWebp(bytes, out) {
   }
 }
 
-// One naive byte scan; ISOBMFF is a tree we deliberately do not parse.
+// Naive byte scans; ISOBMFF is a tree we deliberately do not parse. The
+// honest "not itemized" verdict does the safety work; these just add color.
 function inspectIsobmff(bytes, out) {
-  const sig = sigBytes("Exif");
-  outer: for (let i = 0; i < bytes.length - 4; i++) {
-    for (let j = 0; j < 4; j++) if (bytes[i + j] !== sig[j]) continue outer;
-    out.items.push({
-      id: "exif:present",
-      severity: "high",
-      label: "Exif data",
-      value: "present (not itemized for this format)",
-    });
-    break;
+  const probes = [
+    { sig: sigBytes("Exif"), id: "exif:present", label: "Exif data" },
+    { sig: sigBytes("<x:xmpmeta"), id: "xmp", label: "XMP metadata" },
+  ];
+  for (const { sig, id, label } of probes) {
+    outer: for (let i = 0; i < bytes.length - sig.length; i++) {
+      for (let j = 0; j < sig.length; j++) if (bytes[i + j] !== sig[j]) continue outer;
+      out.items.push({
+        id,
+        severity: "high",
+        label,
+        value: "present (not itemized for this format)",
+      });
+      break;
+    }
   }
 }
 
