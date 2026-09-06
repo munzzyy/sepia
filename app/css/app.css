@@ -11,7 +11,7 @@
   --line: #d8c9ae;
   --high: #a02c1f;
   --high-bg: #f7ddd6;
-  --medium: #8a6a12;
+  --medium: #755a0b;
   --medium-bg: #f3e8c8;
   --low: #5c6b52;
   --low-bg: #e2e8da;
@@ -483,6 +483,8 @@ button {
 
 /* ------------------------------------------------------------- toast */
 
+/* Kept in the accessibility tree at all times: a live region inside
+   display:none never reaches a screen reader. Shown with a class. */
 .toast {
   position: fixed;
   left: 50%;
@@ -496,6 +498,22 @@ button {
   box-shadow: var(--shadow);
   z-index: 50;
   max-width: min(92vw, 480px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s;
+}
+.toast.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.kbd-hint {
+  margin: 0;
+  padding: 5px 14px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  border-top: 1px solid var(--line);
+  background: var(--paper);
 }
 
 @media (prefers-reduced-motion: no-preference) {

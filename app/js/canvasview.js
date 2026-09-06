@@ -5,6 +5,9 @@
 import { addOp, hitOp, moveOp, resizeOp, removeOp, paintOps, normRect } from "./editor.js";
 import { t } from "./i18n.js";
 
+// focusedSuggestion is declared near the keyboard section below; render()
+// reads it to draw the focused code outline solid and thick.
+
 const HANDLE_PX = 12;
 const INK = "#0e0c0a";
 
@@ -101,8 +104,8 @@ export function createCanvasView(host) {
 
     for (const s of host.getSuggestions()) {
       ctx.strokeStyle = "#d98d4a";
-      ctx.setLineDash([6 * px, 4 * px]);
-      ctx.lineWidth = 3 * px;
+      ctx.setLineDash(s === focusedSuggestion ? [] : [6 * px, 4 * px]);
+      ctx.lineWidth = (s === focusedSuggestion ? 5 : 3) * px;
       ctx.strokeRect(s.rect.x, s.rect.y, s.rect.w, s.rect.h);
       ctx.setLineDash([]);
     }
@@ -179,6 +182,7 @@ export function createCanvasView(host) {
 
   canvas.addEventListener("pointerdown", (ev) => {
     canvas.setPointerCapture(ev.pointerId);
+    focusedSuggestion = null;
     const { sx, sy } = localPoint(ev);
     pointers.set(ev.pointerId, { sx, sy });
     if (pointers.size === 2) {
@@ -336,12 +340,94 @@ export function createCanvasView(host) {
 
   // ---------------------------------------------------------- keyboard
 
+  // Where a rect sits, in words a screen reader can place.
+  function describeRect(r) {
+    const editor = host.getEditor();
+    const pct = (v, total) => Math.round((v / total) * 100);
+    return t("{x}% across, {y}% down, covering {w}% by {h}%", {
+      x: pct(r.x, editor.width),
+      y: pct(r.y, editor.height),
+      w: pct(r.w, editor.width),
+      h: pct(r.h, editor.height),
+    });
+  }
+
+  // Tab cycles code suggestions first, then boxes, so nothing on the canvas
+  // is pointer-only. Focus is the module's selected/focusedSuggestion pair.
+  let focusedSuggestion = null;
+
+  function cycleFocus(dir) {
+    const editor = host.getEditor();
+    const suggestions = host.getSuggestions();
+    const ops = paintOps(editor);
+    const ring = [...suggestions.map((s) => ({ kind: "s", item: s })), ...ops.map((o) => ({ kind: "o", item: o }))];
+    if (!ring.length) {
+      host.announce(t("Nothing on the canvas yet. Press B to add a cover box."));
+      return;
+    }
+    const at = ring.findIndex(
+      (e) => (e.kind === "s" && e.item === focusedSuggestion) || (e.kind === "o" && e.item === selected),
+    );
+    const next = ring[(at + dir + ring.length) % ring.length];
+    focusedSuggestion = next.kind === "s" ? next.item : null;
+    selected = next.kind === "o" ? next.item : null;
+    const idx = ring.indexOf(next) + 1;
+    if (next.kind === "s") {
+      host.announce(
+        t("Code suggestion {n} of {total}: {where}. Press Enter to cover it.", {
+          n: idx,
+          total: ring.length,
+          where: describeRect(next.item.rect),
+        }),
+      );
+    } else {
+      const label = next.item.type === "ink" ? t("Ink") : t("Pixelate");
+      host.announce(
+        t("{tool} box {n} of {total}: {where}", { tool: label, n: idx, total: ring.length, where: describeRect(next.item.rect) }),
+      );
+    }
+    requestRender();
+  }
+
+  let announceTimer = 0;
+  function announceSelected() {
+    clearTimeout(announceTimer);
+    announceTimer = setTimeout(() => {
+      if (selected) host.announce(describeRect(selected.rect));
+      else if (cropDraft) host.announce(t("Keeping {where}", { where: describeRect(normRect(cropDraft, host.getEditor().width, host.getEditor().height)) }));
+    }, 350);
+  }
+
   canvas.addEventListener("keydown", (ev) => {
     const editor = host.getEditor();
     const step = ev.ctrlKey ? 1 : Math.max(2, Math.round(8 / view.scale));
     const key = ev.key;
+    if (key === "Tab") {
+      cycleFocus(ev.shiftKey ? -1 : 1);
+      ev.preventDefault();
+      return;
+    }
+    if (key === "Enter" && focusedSuggestion) {
+      host.acceptSuggestion(focusedSuggestion);
+      focusedSuggestion = null;
+      requestRender();
+      ev.preventDefault();
+      return;
+    }
     if (key === "b" || key === "B") {
-      addKeyboardBox();
+      if (host.getTool() === "crop") {
+        // Seed a centered crop draft the arrow keys can then shape.
+        const w = editor.width * 0.8;
+        const h = editor.height * 0.8;
+        cropDraft = { x: (editor.width - w) / 2, y: (editor.height - h) / 2, w, h };
+        host.onCropDraft(normRect(cropDraft, editor.width, editor.height));
+        host.announce(
+          t("Crop draft covers the middle {pct}% of the image. Arrows move it, Shift and arrows resize, then Apply crop.", { pct: 80 }),
+        );
+        requestRender();
+      } else {
+        addKeyboardBox();
+      }
       ev.preventDefault();
       return;
     }
@@ -356,6 +442,8 @@ export function createCanvasView(host) {
     }
     if (key === "Escape") {
       selected = null;
+      focusedSuggestion = null;
+      host.announce(t("Selection cleared"));
       requestRender();
       return;
     }
@@ -374,12 +462,31 @@ export function createCanvasView(host) {
       return;
     }
     const dirs = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
-    if (dirs[key] && selected) {
+    if (dirs[key]) {
       const [dx, dy] = dirs[key];
-      if (ev.shiftKey) resizeOp(editor, selected.id, dx * step, dy * step);
-      else moveOp(editor, selected.id, dx * step, dy * step);
-      host.onChange();
-      requestRender();
+      if (host.getTool() === "crop" && cropDraft) {
+        if (ev.shiftKey) {
+          cropDraft.w += dx * step * 4;
+          cropDraft.h += dy * step * 4;
+        } else {
+          cropDraft.x += dx * step * 4;
+          cropDraft.y += dy * step * 4;
+        }
+        host.onCropDraft(normRect(cropDraft, editor.width, editor.height));
+        announceSelected();
+        requestRender();
+      } else if (selected) {
+        if (ev.shiftKey) resizeOp(editor, selected.id, dx * step, dy * step);
+        else moveOp(editor, selected.id, dx * step, dy * step);
+        host.onChange();
+        announceSelected();
+        requestRender();
+      } else {
+        // Nothing selected: arrows pan the view, which zoom needs anyway.
+        view.tx -= dx * 60;
+        view.ty -= dy * 60;
+        requestRender();
+      }
       ev.preventDefault();
     }
   });
@@ -416,6 +523,7 @@ export function createCanvasView(host) {
     render: requestRender,
     clearSelection() {
       selected = null;
+      focusedSuggestion = null;
       requestRender();
     },
     getSelected: () => selected,

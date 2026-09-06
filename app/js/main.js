@@ -192,6 +192,12 @@ function editorChanged() {
   updateUndoRedo();
 }
 
+// A button that disables itself under the keyboard user's focus strands
+// them on an unfocusable element.
+function rescueFocus() {
+  if (document.activeElement?.disabled) $("canvas").focus({ preventScroll: true });
+}
+
 function setTool(next) {
   tool = next;
   for (const btn of document.querySelectorAll(".tool[data-tool]")) {
@@ -292,6 +298,14 @@ function wireEvents() {
   });
   $("btn-demo").addEventListener("click", openDemo);
 
+  const kbdHint = $("kbd-hint");
+  $("canvas").addEventListener("focus", () => {
+    kbdHint.hidden = false;
+  });
+  $("canvas").addEventListener("blur", () => {
+    kbdHint.hidden = true;
+  });
+
   $("btn-close").addEventListener("click", () => {
     if (session && paintOps(session.editor).length > 0 && !closeArmed) {
       closeArmed = true;
@@ -308,14 +322,16 @@ function wireEvents() {
   });
 
   $("btn-undo").addEventListener("click", () => {
-    undo(session.editor);
+    announce(undo(session.editor) ? t("Undone") : t("Nothing to undo"));
     editorChanged();
     view.clearSelection();
+    rescueFocus();
   });
   $("btn-redo").addEventListener("click", () => {
-    redo(session.editor);
+    announce(redo(session.editor) ? t("Redone") : t("Nothing to redo"));
     editorChanged();
     view.render();
+    rescueFocus();
   });
 
   for (const btn of document.querySelectorAll(".tool[data-tool]")) {
@@ -340,14 +356,28 @@ function wireEvents() {
   });
 
   $("btn-xray").addEventListener("click", () => setXrayOpen($("xray").hidden));
-  $("btn-xray-close").addEventListener("click", () => setXrayOpen(false));
+  $("btn-xray-close").addEventListener("click", () => {
+    setXrayOpen(false);
+    $("btn-xray").focus();
+  });
 
   $("btn-export").addEventListener("click", runExport);
 
+  const reExportAnnounced = async (type) => {
+    if (await reExport(type, Number($("q-slider").value) / 100)) {
+      announce(
+        t("Re-exported as {fmt}, {size}. {verdict}", {
+          fmt: type === "image/png" ? "PNG" : "JPEG",
+          size: $("done-size").textContent,
+          verdict: $("done-title").textContent,
+        }),
+      );
+    }
+  };
   for (const radio of document.querySelectorAll('input[name="fmt"]')) {
-    radio.addEventListener("change", () => reExport(radio.value, Number($("q-slider").value) / 100));
+    radio.addEventListener("change", () => reExportAnnounced(radio.value));
   }
-  $("q-slider").addEventListener("change", () => reExport("image/jpeg", Number($("q-slider").value) / 100));
+  $("q-slider").addEventListener("change", () => reExportAnnounced("image/jpeg"));
 
   $("btn-share").addEventListener("click", async () => {
     const ok = await shareOut(session.exported.blob, session.exported.name);

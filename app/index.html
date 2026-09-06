@@ -29,8 +29,8 @@
     <p class="pitch" data-i18n>Photos and screenshots say more than you think: where you were, what phone you own, sometimes a hidden copy of the uncropped shot. Sepia shows you all of it, blacks out what you choose, and hands back a file it has re-checked itself.</p>
 
     <div id="dropzone" class="dropzone" role="button" tabindex="0" data-testid="pick-image"
-         aria-label="Choose an image to scrub">
-      <strong data-i18n>Choose an image</strong>
+         aria-labelledby="drop-cta" aria-describedby="drop-hint">
+      <strong id="drop-cta" data-i18n>Choose an image</strong>
       <span id="drop-hint" class="drop-hint" data-i18n>or drop one here, or paste with Ctrl+V</span>
     </div>
     <input id="file-input" type="file" accept="image/*" multiple hidden>
@@ -153,6 +153,7 @@
   </div>
 
   <p id="pixelate-note" class="tool-note" hidden data-i18n>Pixelate is for faces and objects. For text or numbers, ink is the safe tool: pixelated text can sometimes be reconstructed.</p>
+  <p id="kbd-hint" class="kbd-hint" hidden data-i18n>B adds a box. Tab cycles boxes and found codes. Arrows move, Shift with arrows resizes, Delete removes, + and - zoom, 0 fits.</p>
 
   <!-- X-ray drawer -->
   <aside id="xray" class="xray" hidden aria-labelledby="xray-title">
@@ -174,7 +175,7 @@
 <section id="screen-done" class="screen" hidden>
   <div class="done-inner">
     <div id="done-badge" class="done-badge" data-testid="done-badge">✓</div>
-    <h2 id="done-title" data-i18n>Checked clean</h2>
+    <h2 id="done-title" tabindex="-1" data-i18n>Checked clean</h2>
     <p id="done-sub" class="done-sub"></p>
 
     <img id="done-preview" class="done-preview" alt="" data-i18n-attr="alt">
@@ -190,12 +191,13 @@
       <ul id="done-leftover-list"></ul>
     </div>
 
-    <div class="fmt-row">
+    <fieldset class="fmt-row">
+      <legend class="sr-only" data-i18n>Export format</legend>
       <label><input type="radio" name="fmt" value="image/png"> PNG</label>
       <label><input type="radio" name="fmt" value="image/jpeg"> JPEG</label>
       <label id="q-wrap" hidden><span data-i18n>Quality</span> <input id="q-slider" type="range" min="50" max="95" value="90"></label>
       <span id="done-size" class="done-size"></span>
-    </div>
+    </fieldset>
 
     <div class="done-actions">
       <button id="btn-share" class="btn-primary" data-testid="share" data-i18n>Share</button>
@@ -209,7 +211,9 @@
 
 </main>
 
-<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<!-- Visual only; the sr-live region below is the screen-reader channel,
+     so messages are never spoken twice or lost to visibility toggling. -->
+<div id="toast" class="toast" aria-hidden="true"></div>
 <div id="sr-live" class="sr-only" aria-live="polite"></div>
 
 <script type="module" src="js/main.js"></script>

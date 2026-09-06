@@ -10,10 +10,11 @@ let toastTimer = 0;
 export function toast(msg, ms = 3500) {
   const el = $("toast");
   el.textContent = msg;
-  el.hidden = false;
+  el.classList.add("show");
+  announce(msg);
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => {
-    el.hidden = true;
+    el.classList.remove("show");
   }, ms);
 }
 
@@ -33,7 +34,20 @@ export function showScreen(name) {
     history.pushState(null, "", location.pathname + location.search);
   }
   window.scrollTo(0, 0);
+  // A screen switch removes whatever held focus; land it somewhere real so
+  // keyboard and screen-reader users are not dropped back to <body>. The
+  // very first paint keeps the browser's default (the skip link stays
+  // first) instead of yanking focus on page load.
+  if (!firstScreenShown) {
+    firstScreenShown = true;
+    return;
+  }
+  if (name === "done") $("done-title").focus({ preventScroll: true });
+  else if (name === "start") $("dropzone").focus({ preventScroll: true });
+  else $("canvas").focus({ preventScroll: true });
 }
+
+let firstScreenShown = false;
 
 export function riskPill(report) {
   const el = $("risk-pill");

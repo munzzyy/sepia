@@ -172,4 +172,22 @@ export const es = {
   "Saved to your photos": "Guardado en tus fotos",
   "Downloaded": "Descargado",
   "Next image ({count} left)": "Siguiente imagen (quedan {count})",
+  "B adds a box. Tab cycles boxes and found codes. Arrows move, Shift with arrows resizes, Delete removes, + and - zoom, 0 fits.":
+    "B añade un recuadro. Tab recorre recuadros y códigos encontrados. Las flechas mueven, Shift con flechas cambia el tamaño, Suprimir quita, + y - hacen zoom, 0 ajusta.",
+  "Code suggestion {n} of {total}: {where}. Press Enter to cover it.":
+    "Sugerencia de código {n} de {total}: {where}. Pulsa Enter para taparla.",
+  "Crop draft covers the middle {pct}% of the image. Arrows move it, Shift and arrows resize, then Apply crop.":
+    "El borrador de recorte cubre el {pct}% central de la imagen. Las flechas lo mueven, Shift y flechas cambian su tamaño, luego Aplicar recorte.",
+  "Export format": "Formato de exportación",
+  "Keeping {where}": "Conservando {where}",
+  "Nothing on the canvas yet. Press B to add a cover box.":
+    "Todavía no hay nada en el lienzo. Pulsa B para añadir un recuadro de cobertura.",
+  "Nothing to redo": "Nada que rehacer",
+  "Nothing to undo": "Nada que deshacer",
+  "Re-exported as {fmt}, {size}. {verdict}": "Reexportado como {fmt}, {size}. {verdict}",
+  "Redone": "Rehecho",
+  "Selection cleared": "Selección quitada",
+  "Undone": "Deshecho",
+  "{tool} box {n} of {total}: {where}": "Recuadro de {tool} {n} de {total}: {where}",
+  "{x}% across, {y}% down, covering {w}% by {h}%": "{x}% a lo ancho, {y}% hacia abajo, cubriendo {w}% por {h}%",
 };

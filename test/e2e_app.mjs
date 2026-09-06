@@ -339,6 +339,12 @@ async function main() {
     check("keyboard: B places a cover box", (await c.evalJs("__sepiaApi.state.ops")) === 1);
     const announced = await c.evalJs("document.getElementById('sr-live').textContent");
     check("keyboard: action announced to screen readers", announced.includes("Cover box"), announced);
+    check("keyboard: hint bar appears with canvas focus", await c.evalJs("!document.getElementById('kbd-hint').hidden"));
+    await c.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab" });
+    await c.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab" });
+    await sleep(150);
+    const cycled = await c.evalJs("document.getElementById('sr-live').textContent");
+    check("keyboard: Tab cycles to the box and announces position", /box 1 of 1/.test(cycled), cycled);
 
     // ----------------------------------------------- demo + clean fixture
     // One close click arms the discard guard while covers exist; the second
