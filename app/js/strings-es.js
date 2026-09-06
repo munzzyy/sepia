@@ -8,6 +8,7 @@ export const es = {
     "Las fotos y capturas dicen más de lo que crees: dónde estabas, qué teléfono tienes, a veces hasta una copia oculta de la toma sin recortar. Sepia te muestra todo, tapa lo que elijas y te devuelve un archivo que él mismo volvió a revisar.",
   "Choose an image": "Elige una imagen",
   "or drop one here, or paste with Ctrl+V": "o suelta una aquí, o pega con Ctrl+V",
+  "or share a photo to Sepia from any app": "o comparte una foto a Sepia desde cualquier app",
   "Try it on a sample photo": "Pruébalo con una foto de ejemplo",
   "Everything happens on this device. Nothing is uploaded, ever.":
     "Todo ocurre en este dispositivo. Nunca se sube nada.",

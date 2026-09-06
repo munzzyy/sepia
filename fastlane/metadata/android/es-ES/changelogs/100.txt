@@ -1,0 +1,1 @@
+Primera version: radiografia de metadatos, redaccion con tinta/pixelado/recorte, deteccion de QR, verificacion de limpieza, EN+ES, sin permiso de INTERNET.

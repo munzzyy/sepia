@@ -1,0 +1,17 @@
+Las fotos y capturas dicen mas de lo que crees: donde estabas, que telefono
+tienes, a veces una copia oculta de la toma sin recortar o un clip de video
+anadido por el modo de foto en movimiento.
+
+Sepia es el paso antes de enviar:
+
+* Radiografia: ve todo lo que el archivo dice de ti, ordenado por gravedad.
+* Redaccion: tinta y pixelado quemados en los pixeles, mas recorte. Detecta
+  codigos QR y ofrece taparlos.
+* Prueba: el archivo exportado se recodifica desde cero y Sepia vuelve a
+  abrir su propio resultado para ensenarte que queda (y que no) dentro.
+
+Todo ocurre en tu dispositivo. Esta app no tiene el permiso de INTERNET: el
+sistema operativo no la deja abrir conexiones, y puedes comprobarlo en el
+manifiesto en lugar de confiar en una promesa.
+
+Sin cuentas, sin analiticas, sin dependencias. Licencia MIT.

@@ -127,11 +127,13 @@ async function main() {
       webOnly: document.querySelectorAll(".web-only").length,
       about: !document.getElementById("about-site").hidden,
       wrapper: __sepiaApi.state.wrapper,
+      hint: document.getElementById("drop-hint").textContent,
       errs: (__sepiaErrors || []).slice(0, 5),
     }))()`);
     check("wrapper: every web-only section removed from the DOM", w.webOnly === 0, String(w.webOnly));
     check("wrapper: about link revealed", w.about === true);
     check("wrapper: bridge detected", w.wrapper === true);
+    check("wrapper: hint speaks share-sheet, not Ctrl+V", w.hint.includes("share") && !w.hint.includes("Ctrl"), w.hint);
     check("wrapper: console clean", w.errs.length === 0, JSON.stringify(w.errs));
     const shot = await wrap.send("Page.captureScreenshot", { format: "png" });
     writeFileSync(path.join(SHOTS, "05-wrapper-start.png"), Buffer.from(shot.result.data, "base64"));

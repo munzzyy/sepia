@@ -229,6 +229,9 @@ async function reExport(type, quality) {
 function stripWebOnly() {
   for (const node of document.querySelectorAll(".web-only")) node.remove();
   $("about-site").hidden = false;
+  // Phones have no Ctrl+V and no desktop drag; the everyday path is the
+  // share sheet.
+  $("drop-hint").textContent = t("or share a photo to Sepia from any app");
 }
 
 function wireEvents() {
