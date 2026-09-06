@@ -134,6 +134,22 @@ export function setXrayOpen(open) {
 
 let previewUrl = null;
 
+// Blob URLs hold the very bytes the app exists to contain; a closed session
+// must leave none of them resolvable.
+export function releaseUrls() {
+  if (thumbUrl) {
+    URL.revokeObjectURL(thumbUrl);
+    thumbUrl = null;
+    $("thumb-img").removeAttribute("src");
+  }
+  if (previewUrl) {
+    URL.revokeObjectURL(previewUrl);
+    previewUrl = null;
+    $("done-preview").removeAttribute("src");
+  }
+  $("thumb-reveal").hidden = true;
+}
+
 export function renderProof({ report, opsCount, cropUsed, verify, blob, name, origName }) {
   const clean = verify.clean;
   const badge = $("done-badge");

@@ -11,7 +11,7 @@ import { findCodes, codesSupported } from "./barcodes.js";
 import { createCanvasView } from "./canvasview.js";
 import { isWrapper, wrapperVersion, shareOut, saveOut, sharedToken, onShared } from "./platform.js";
 import { setLocale, resolveLocale, translateDom, t } from "./i18n.js";
-import { $, toast, announce, showScreen, riskPill, renderXray, setXrayOpen, renderProof, copyGpsAction } from "./ui.js";
+import { $, toast, announce, showScreen, riskPill, renderXray, setXrayOpen, renderProof, releaseUrls, copyGpsAction } from "./ui.js";
 
 const VERSION = "0.1.0";
 
@@ -146,6 +146,7 @@ function closeSession() {
   if (!session) return;
   session.bitmap?.close?.();
   session = null;
+  releaseUrls();
   riskPill(null);
   setXrayOpen(false);
 }
@@ -345,6 +346,22 @@ function wireEvents() {
     if (file) await openBytes(new Uint8Array(await file.arrayBuffer()), file.name, file.type);
   });
 
+  document.addEventListener("keydown", (ev) => {
+    if (!session || $("screen-edit").hidden) return;
+    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "z") {
+      ev.preventDefault();
+      if (ev.shiftKey) redo(session.editor);
+      else undo(session.editor);
+      updateUndoRedo();
+      view.clearSelection();
+    } else if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "y") {
+      ev.preventDefault();
+      redo(session.editor);
+      updateUndoRedo();
+      view.render();
+    }
+  });
+
   window.addEventListener("popstate", () => {
     const hash = location.hash;
     if (hash === "#edit" && session) showScreen("edit");
@@ -409,20 +426,23 @@ async function boot() {
   if (token) await openSharedToken(token);
 
   // A share_target launch lands with ?share-target=1; the worker parked the
-  // file in the cache for exactly one pickup.
-  if (new URLSearchParams(location.search).has("share-target")) {
+  // file in the cache for exactly one pickup. On every other boot the same
+  // entry is purged unread, so a crashed pickup cannot leave a shared image
+  // parked in browser storage.
+  if ("caches" in globalThis) {
     try {
       const cache = await caches.open("sepia-share");
-      const res = await cache.match("/share-incoming");
+      const isPickup = new URLSearchParams(location.search).has("share-target");
+      const res = isPickup ? await cache.match("/share-incoming") : null;
+      await cache.delete("/share-incoming");
       if (res) {
-        await cache.delete("/share-incoming");
         const bytes = new Uint8Array(await res.arrayBuffer());
         await openBytes(bytes, "", res.headers.get("content-type") || "");
       }
+      if (isPickup) history.replaceState(null, "", location.pathname);
     } catch (err) {
       __sepiaErrors.push(`share-target: ${err}`);
     }
-    history.replaceState(null, "", location.pathname);
   }
 }
 

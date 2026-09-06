@@ -1,8 +1,9 @@
 // Sepia service worker. Two jobs: work offline, and catch share-target
 // launches. Image data is never cached except the one-shot share hand-off,
-// which is deleted on pickup.
+// which is deleted on pickup, purged on every boot, and never served to a
+// GET.
 
-const VERSION = "sepia-v1";
+const VERSION = "sepia-v0.1.0";
 const SHARE_CACHE = "sepia-share";
 
 const PRECACHE = [
@@ -27,12 +28,12 @@ const PRECACHE = [
   "/js/platform.js",
   "/js/i18n.js",
   "/js/strings-es.js",
-  "/js/main.js",
   "/icons/sepia.svg",
   "/icons/favicon.svg",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/demo/sample.jpg",
+  "/privacy.html",
   "/manifest.webmanifest"
 ];
 
@@ -64,10 +65,16 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method === "POST" && url.pathname === "/share") {
     event.respondWith(
       (async () => {
+        // Only the OS share sheet ("none") or the app itself may plant a
+        // file; a cross-site form post must not steer this tab into Sepia.
+        const site = event.request.headers.get("Sec-Fetch-Site");
+        if (site !== null && site !== "none" && site !== "same-origin") {
+          return new Response("no", { status: 403 });
+        }
         try {
           const form = await event.request.formData();
           const file = form.get("image");
-          if (file) {
+          if (file && file.size <= 100 * 1024 * 1024) {
             const cache = await caches.open(SHARE_CACHE);
             await cache.put(
               "/share-incoming",
@@ -85,19 +92,36 @@ self.addEventListener("fetch", (event) => {
 
   if (event.request.method !== "GET" || url.origin !== self.location.origin) return;
 
+  // The parked share file is for the app's one pickup, never a response.
+  if (url.pathname === "/share-incoming") {
+    event.respondWith(new Response("gone", { status: 404 }));
+    return;
+  }
+
   if (event.request.mode === "navigate") {
-    event.respondWith(
-      (async () => {
-        const cached = await caches.match("/index.html");
-        return cached || fetch(event.request);
-      })()
-    );
+    // Only the app shell and the privacy page are served from cache; any
+    // other navigation (the APK download, future pages) goes to network.
+    const shell =
+      url.pathname === "/" || url.pathname === "/index.html"
+        ? "/index.html"
+        : url.pathname === "/privacy.html" || url.pathname === "/privacy"
+          ? "/privacy.html"
+          : null;
+    if (shell) {
+      event.respondWith(
+        (async () => {
+          const cached = await caches.match(shell, { cacheName: VERSION });
+          return cached || fetch(event.request);
+        })()
+      );
+    }
     return;
   }
 
   event.respondWith(
     (async () => {
-      const cached = await caches.match(event.request);
+      // Scoped to the app cache: the share cache must never answer a GET.
+      const cached = await caches.match(event.request, { cacheName: VERSION });
       if (cached) return cached;
       const res = await fetch(event.request);
       if (res && res.ok && PRECACHE.includes(url.pathname)) {
