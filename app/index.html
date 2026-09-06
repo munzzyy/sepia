@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<title>Sepia: share images without oversharing</title>
+<meta name="description" content="Photos and screenshots carry your location, your device serials, and hidden copies of themselves. Sepia shows you everything, burns your redactions into the pixels, and proves the file it gives back is clean. All on your device.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f4ead8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#181410" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main" data-i18n>Skip to content</a>
+
+<main id="main">
+
+<!-- ============================================================ start -->
+<section id="screen-start" class="screen">
+  <div class="start-hero">
+    <img class="logo" src="icons/sepia.svg" alt="" width="72" height="72">
+    <h1>Sepia</h1>
+    <p class="tagline" data-i18n>Share images without oversharing.</p>
+    <p class="pitch" data-i18n>Photos and screenshots say more than you think: where you were, what phone you own, sometimes a hidden copy of the uncropped shot. Sepia shows you all of it, blacks out what you choose, and hands back a file it has re-checked itself.</p>
+
+    <div id="dropzone" class="dropzone" role="button" tabindex="0" data-testid="pick-image"
+         aria-label="Choose an image to scrub">
+      <strong data-i18n>Choose an image</strong>
+      <span class="drop-hint" data-i18n>or drop one here, or paste with Ctrl+V</span>
+    </div>
+    <input id="file-input" type="file" accept="image/*" multiple hidden>
+
+    <button id="btn-demo" class="btn-ghost" data-testid="try-demo" data-i18n>Try it on a sample photo</button>
+
+    <p class="offline-note" data-i18n>Everything happens on this device. Nothing is uploaded, ever.</p>
+  </div>
+
+  <!-- Landing content: the website is also the pitch. The wrapper removes
+       every .web-only node from the DOM before first paint. -->
+  <div class="web-only landing">
+    <section class="lnd" aria-labelledby="lnd-leaks-h">
+      <h2 id="lnd-leaks-h" data-i18n>What leaks when you share a picture</h2>
+      <div class="lnd-cards">
+        <article class="lnd-card">
+          <h3 data-i18n>Where you were</h3>
+          <p data-i18n>Phone cameras write GPS coordinates into every shot. Forwarding a photo of your dog can hand over your home address to whoever downloads it.</p>
+        </article>
+        <article class="lnd-card">
+          <h3 data-i18n>Who and what took it</h3>
+          <p data-i18n>Camera serial numbers, owner name fields, editing software, timestamps down to the second and time zone. Enough to tie separate photos to one person.</p>
+        </article>
+        <article class="lnd-card">
+          <h3 data-i18n>A hidden second image</h3>
+          <p data-i18n>Many files carry a small preview copy inside. Crop something embarrassing out, and the preview can still show the full original.</p>
+        </article>
+        <article class="lnd-card">
+          <h3 data-i18n>A hidden video</h3>
+          <p data-i18n>Motion photo modes append a short video clip after the image data. It travels with the file, invisible in every normal viewer.</p>
+        </article>
+        <article class="lnd-card">
+          <h3 data-i18n>Bad redactions</h3>
+          <p data-i18n>Highlighter smears and crops done in the wrong app leave the covered text recoverable. Sepia burns redactions into the pixels and re-encodes everything.</p>
+        </article>
+        <article class="lnd-card">
+          <h3 data-i18n>Codes you forgot about</h3>
+          <p data-i18n>Boarding passes, tickets, parcel labels. The QR code in your screenshot holds more than the text next to it. Sepia finds codes and offers to cover them.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="lnd" aria-labelledby="lnd-proof-h">
+      <h2 id="lnd-proof-h" data-i18n>It shows its work</h2>
+      <p data-i18n>Every scrubber promises a clean file. Sepia re-opens the finished file and runs the same X-ray on it that it ran on the original, then shows you the result. If anything survived, you would see it listed, not a green checkmark on faith.</p>
+    </section>
+
+    <section class="lnd" aria-labelledby="lnd-honest-h">
+      <h2 id="lnd-honest-h" data-i18n>What Sepia does not do</h2>
+      <ul class="honest-list">
+        <li data-i18n>It cannot read minds about pixels. A face, a street sign, or a reflection in a window is content, and covering it is your call. Sepia gives you the tools and flags QR codes, nothing more.</li>
+        <li data-i18n>Pixelation on text is weaker than ink. Research keeps un-blurring blurred text. For words and numbers, use the ink tool; pixelate is for faces and objects.</li>
+        <li data-i18n>No PDFs. Half-done PDF redaction has burned people badly, and pretending to handle it would be worse than not handling it.</li>
+        <li data-i18n>A camera's sensor leaves a faint fingerprint in the pixels themselves. Removing metadata does not remove that. If your threat is a forensics lab, you need more than any scrubber.</li>
+      </ul>
+    </section>
+
+    <section class="lnd" id="landing-app" aria-labelledby="lnd-app-h">
+      <h2 id="lnd-app-h" data-i18n>The Android app cannot phone home</h2>
+      <p data-i18n>The Sepia app ships without the internet permission. Not "we promise not to upload", the operating system will not let it open a connection at all. Check the manifest yourself.</p>
+      <p class="apk-row"><a id="apk-link" class="btn-primary" href="https://github.com/munzzyy/sepia/releases/latest/download/sepia.apk" data-i18n>Download the APK</a></p>
+      <p class="apk-note" data-i18n>Or use the web app right here. It works offline once loaded and can be installed from your browser menu.</p>
+    </section>
+
+    <section class="lnd lnd-faq" aria-labelledby="lnd-faq-h">
+      <h2 id="lnd-faq-h" data-i18n>Questions people ask</h2>
+      <details><summary data-i18n>Is my image uploaded to a server?</summary><p data-i18n>No. There is no server to upload to. The page never opens a connection except to fetch its own code from this site, and the Android app cannot open connections at all.</p></details>
+      <details><summary data-i18n>Why not just screenshot the photo?</summary><p data-i18n>A screenshot does drop the original metadata, but it also drops quality, keeps whatever was visible, and your screenshot tool may write its own timestamps and file names that say when and where you took it. Sepia keeps full quality, covers what you choose, and gives the file a name that says nothing.</p></details>
+      <details><summary data-i18n>What happens to the hidden video in motion photos?</summary><p data-i18n>Re-encoding keeps only the pixels you see, so the appended clip is gone from the output. The X-ray warns you it was there, so you know what the original still carries.</p></details>
+      <details><summary data-i18n>Can I keep my copyright line in the file?</summary><p data-i18n>Not yet. The first version strips everything; a keep-my-credit option is on the list.</p></details>
+      <details><summary data-i18n>Is this open source?</summary><p data-i18n>Yes, MIT licensed. The whole app is readable JavaScript with no dependencies.</p></details>
+    </section>
+
+    <footer class="land-footer">
+      <a href="privacy.html" data-i18n>Privacy</a>
+      <a href="https://github.com/munzzyy/sepia">GitHub</a>
+      <span id="ver"></span>
+    </footer>
+  </div>
+
+  <p id="about-site" class="about-line" hidden><a href="https://github.com/munzzyy/sepia" data-i18n>About Sepia</a></p>
+</section>
+
+<!-- =========================================================== editor -->
+<section id="screen-edit" class="screen" hidden>
+  <header class="edit-top">
+    <button id="btn-close" class="icon-btn" data-i18n-attr="aria-label" aria-label="Close this image" title="Close">✕</button>
+    <div class="risk-pill" id="risk-pill" role="status"></div>
+    <div class="top-actions">
+      <button id="btn-undo" class="icon-btn" data-i18n-attr="aria-label" aria-label="Undo" disabled>↶</button>
+      <button id="btn-redo" class="icon-btn" data-i18n-attr="aria-label" aria-label="Redo" disabled>↷</button>
+      <button id="btn-xray" class="btn-ghost" data-testid="open-xray" aria-expanded="false" data-i18n>X-ray</button>
+    </div>
+  </header>
+
+  <div id="canvas-wrap" class="canvas-wrap">
+    <canvas id="canvas" tabindex="0" data-i18n-attr="aria-label" aria-label="Image editor canvas. Press B to add a cover box, arrow keys to move it, Shift and arrows to resize, Delete to remove."></canvas>
+    <div id="crop-bar" class="crop-bar" hidden>
+      <span data-i18n>Drag to choose what to keep</span>
+      <button id="btn-crop-apply" class="btn-primary" data-i18n>Apply crop</button>
+      <button id="btn-crop-cancel" class="btn-ghost" data-i18n>Cancel</button>
+    </div>
+  </div>
+
+  <div class="toolbar" role="toolbar" data-i18n-attr="aria-label" aria-label="Redaction tools">
+    <button id="tool-ink" class="tool active" data-tool="ink" aria-pressed="true" data-testid="tool-ink">
+      <span class="tool-icon ink-icon"></span><span data-i18n>Ink</span>
+    </button>
+    <button id="tool-pixelate" class="tool" data-tool="pixelate" aria-pressed="false" data-testid="tool-pixelate">
+      <span class="tool-icon px-icon"></span><span data-i18n>Pixelate</span>
+    </button>
+    <button id="tool-crop" class="tool" data-tool="crop" aria-pressed="false">
+      <span class="tool-icon crop-icon"></span><span data-i18n>Crop</span>
+    </button>
+    <button id="btn-codes" class="tool" hidden>
+      <span class="tool-icon qr-icon"></span><span data-i18n>Find codes</span>
+    </button>
+    <span class="toolbar-space"></span>
+    <button id="btn-export" class="btn-primary" data-testid="export" data-i18n>Scrub &amp; export</button>
+  </div>
+
+  <p id="pixelate-note" class="tool-note" hidden data-i18n>Pixelate is for faces and objects. For text or numbers, ink is the safe tool: pixelated text can sometimes be reconstructed.</p>
+
+  <!-- X-ray drawer -->
+  <aside id="xray" class="xray" hidden aria-labelledby="xray-title">
+    <div class="xray-head">
+      <h2 id="xray-title" data-i18n>What this file says</h2>
+      <button id="btn-xray-close" class="icon-btn" data-i18n-attr="aria-label" aria-label="Close X-ray">✕</button>
+    </div>
+    <p id="xray-headline" class="xray-headline"></p>
+    <ul id="xray-list" class="xray-list"></ul>
+    <div id="thumb-reveal" hidden>
+      <p data-i18n>The hidden preview stored inside this file:</p>
+      <img id="thumb-img" alt="" data-i18n-attr="alt">
+    </div>
+    <p class="xray-foot" data-i18n>All of this disappears when you export. Redactions handle what is visible in the pixels.</p>
+  </aside>
+</section>
+
+<!-- ============================================================ proof -->
+<section id="screen-done" class="screen" hidden>
+  <div class="done-inner">
+    <div id="done-badge" class="done-badge" data-testid="done-badge">✓</div>
+    <h2 id="done-title" data-i18n>Checked clean</h2>
+    <p id="done-sub" class="done-sub"></p>
+
+    <img id="done-preview" class="done-preview" alt="" data-i18n-attr="alt">
+
+    <div class="done-report">
+      <h3 data-i18n>Removed from this file</h3>
+      <ul id="done-removed"></ul>
+      <p id="done-name" class="done-name"></p>
+    </div>
+
+    <div id="done-leftover" class="done-leftover" hidden>
+      <h3 data-i18n>Still in the file</h3>
+      <ul id="done-leftover-list"></ul>
+    </div>
+
+    <div class="fmt-row">
+      <label><input type="radio" name="fmt" value="image/png"> PNG</label>
+      <label><input type="radio" name="fmt" value="image/jpeg"> JPEG</label>
+      <label id="q-wrap" hidden><span data-i18n>Quality</span> <input id="q-slider" type="range" min="50" max="95" value="90"></label>
+      <span id="done-size" class="done-size"></span>
+    </div>
+
+    <div class="done-actions">
+      <button id="btn-share" class="btn-primary" data-testid="share" data-i18n>Share</button>
+      <button id="btn-save" class="btn-primary" data-testid="save" data-i18n>Save</button>
+    </div>
+
+    <button id="btn-again" class="btn-ghost" data-testid="again" data-i18n>Scrub another image</button>
+    <button id="btn-next" class="btn-primary" hidden></button>
+  </div>
+</section>
+
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<div id="sr-live" class="sr-only" aria-live="polite"></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
