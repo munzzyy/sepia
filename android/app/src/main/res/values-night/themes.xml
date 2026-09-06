@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Sepia" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/sepia_dark</item>
+        <item name="android:statusBarColor">@color/sepia_dark</item>
+        <item name="android:navigationBarColor">@color/sepia_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+</resources>

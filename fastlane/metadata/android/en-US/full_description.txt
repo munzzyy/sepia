@@ -1,0 +1,18 @@
+Photos and screenshots say more than you think: where you were, what phone
+you own, sometimes a hidden copy of the uncropped shot or a video clip
+appended by motion-photo mode.
+
+Sepia is the step before you hit send:
+
+* X-ray: see everything the file says about you, ranked by severity. GPS in
+  plain words, the hidden thumbnail shown, trailing data called out.
+* Redact: ink and pixelation burned into the pixels, plus crop. QR codes are
+  detected and offered for covering.
+* Prove it: the export is re-encoded from scratch, then Sepia re-opens its
+  own output and shows you what is (and is not) still inside.
+
+Everything happens on your device. This app has no INTERNET permission: the
+operating system will not let it open a connection, and you can check the
+manifest instead of trusting a promise.
+
+No accounts, no analytics, no dependencies. MIT licensed.
