@@ -74,15 +74,20 @@ class MainActivity : ComponentActivity() {
                 request: WebResourceRequest,
             ): WebResourceResponse? = assetLoader.shouldInterceptRequest(request.url)
 
-            // The WebView only ever navigates inside the bundled app; any
-            // link out (the about page, the privacy page on the site) goes
-            // to the system browser, which has its own network access.
+            // The WebView only ever navigates inside the bundled app; a
+            // link out (the about link) goes to the system browser. Gated
+            // hard: main-frame https navigations carrying a real user
+            // gesture, nothing else. Anything less and this method is a
+            // relay that hands arbitrary URLs (and query strings) to a
+            // process that does have network access.
             override fun shouldOverrideUrlLoading(
                 view: WebView,
                 request: WebResourceRequest,
             ): Boolean {
                 if (request.url.host == ASSET_HOST) return false
-                runCatching { startActivity(Intent(Intent.ACTION_VIEW, request.url)) }
+                if (request.isForMainFrame && request.hasGesture() && request.url.scheme == "https") {
+                    runCatching { startActivity(Intent(Intent.ACTION_VIEW, request.url)) }
+                }
                 return true
             }
         }
@@ -113,12 +118,16 @@ class MainActivity : ComponentActivity() {
     private fun takeShared(intent: Intent?): Boolean {
         val uri: Uri? = when (intent?.action) {
             Intent.ACTION_SEND ->
-                @Suppress("DEPRECATION")
-                intent.getParcelableExtra(Intent.EXTRA_STREAM)
+                androidx.core.content.IntentCompat.getParcelableExtra(
+                    intent, Intent.EXTRA_STREAM, Uri::class.java,
+                )
             Intent.ACTION_VIEW -> intent.data
             else -> null
         }
-        if (uri == null) return false
+        // content:// only: a hostile sender must not make this process open
+        // file:// paths (least of all Sepia's own cache) or exotic schemes.
+        if (uri == null || uri.scheme != "content") return false
+        if (uri.authority == "io.github.munzzyy.sepia.files") return false
         sharedUri = uri
         // Unguessable and single-session: the token only exists in RAM.
         val raw = ByteArray(16)
@@ -127,12 +136,17 @@ class MainActivity : ComponentActivity() {
         return true
     }
 
+    // One-shot: the first successful serve invalidates the token, so the
+    // unredacted original does not stay fetchable for the activity's life.
     private fun serveShared(path: String): WebResourceResponse? {
         val uri = sharedUri ?: return null
         if (sharedToken.isEmpty() || path != sharedToken) return null
         return runCatching {
             val mime = contentResolver.getType(uri) ?: "image/*"
-            WebResourceResponse(mime, null, contentResolver.openInputStream(uri))
+            val stream = contentResolver.openInputStream(uri)
+            sharedUri = null
+            sharedToken = ""
+            WebResourceResponse(mime, null, stream)
         }.getOrNull()
     }
 

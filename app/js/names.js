@@ -9,7 +9,7 @@ export function scrubbedName(mime, randomBytes) {
   const ext = EXT[mime] || "png";
   const raw =
     randomBytes ??
-    (globalThis.crypto?.getRandomValues ? crypto.getRandomValues(new Uint8Array(3)) : null);
+    (globalThis.crypto?.getRandomValues ? crypto.getRandomValues(new Uint8Array(5)) : null);
   let tag = "";
   if (raw) {
     const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";

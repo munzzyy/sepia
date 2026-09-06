@@ -16,6 +16,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Sepia">
 
+        <!-- No off-device code paths at all: without this, WebView's Safe
+             Browsing component consults Play Services on GMS devices. The
+             WebView never sees a remote URL, so it protects nothing here. -->
+        <meta-data
+            android:name="android.webkit.WebView.EnableSafeBrowsing"
+            android:value="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

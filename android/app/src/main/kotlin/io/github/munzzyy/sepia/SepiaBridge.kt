@@ -31,18 +31,26 @@ class SepiaBridge(private val activity: MainActivity) {
     @JavascriptInterface
     fun shareImage(b64: String, mime: String, name: String) {
         val bytes = runCatching { Base64.decode(b64, Base64.DEFAULT) }.getOrNull() ?: return
-        val dir = File(activity.cacheDir, "shared_out").apply { mkdirs() }
-        // A fresh directory per share; stale exports do not accumulate.
-        dir.listFiles()?.forEach { it.delete() }
-        val file = File(dir, sanitize(name))
-        file.writeBytes(bytes)
-        val uri = FileProvider.getUriForFile(activity, "io.github.munzzyy.sepia.files", file)
-        val send = Intent(Intent.ACTION_SEND).apply {
-            type = mime
-            putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
+        // Everything filesystem-touching is guarded: an IOException on the
+        // JavaBridge thread would otherwise take the whole process down.
+        val uri = runCatching {
+            val dir = File(activity.cacheDir, "shared_out").apply { mkdirs() }
+            // A fresh directory per share; stale exports do not accumulate.
+            dir.listFiles()?.forEach { it.delete() }
+            val file = File(dir, sanitize(name))
+            file.writeBytes(bytes)
+            FileProvider.getUriForFile(activity, "io.github.munzzyy.sepia.files", file)
+        }.getOrNull()
         activity.runOnUiThread {
+            if (uri == null) {
+                Toast.makeText(activity, activity.getString(R.string.save_failed), Toast.LENGTH_SHORT).show()
+                return@runOnUiThread
+            }
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = mime
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
             runCatching {
                 activity.startActivity(Intent.createChooser(send, null))
             }
@@ -76,6 +84,10 @@ class SepiaBridge(private val activity: MainActivity) {
         }
     }
 
-    private fun sanitize(name: String): String =
-        name.replace(Regex("[^A-Za-z0-9._-]"), "_").take(64).ifEmpty { "image.png" }
+    private fun sanitize(name: String): String {
+        val safe = name.replace(Regex("[^A-Za-z0-9._-]"), "_").take(64)
+        // A name of only dots or underscores would address the directory
+        // itself or vanish; fall back to something boring.
+        return if (safe.trim('.', '_').isEmpty()) "image.png" else safe
+    }
 }

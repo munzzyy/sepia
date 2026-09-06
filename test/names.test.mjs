@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { scrubbedName, nameLeaks } from "../app/js/names.js";
 
 test("scrubbed names carry no date, device, or sequence hints", () => {
-  const name = scrubbedName("image/jpeg", Uint8Array.of(1, 2, 3));
-  assert.match(name, /^image-[a-z2-9]{3}\.jpg$/);
+  const name = scrubbedName("image/jpeg");
+  assert.match(name, /^image-[a-z2-9]{5}\.jpg$/);
   assert.equal(nameLeaks(name), false);
   assert.equal(scrubbedName("image/png", Uint8Array.of(0, 0, 0)), "image-aaa.png");
   assert.equal(scrubbedName("application/nonsense", Uint8Array.of(0, 0, 0)), "image-aaa.png");

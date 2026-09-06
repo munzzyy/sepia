@@ -167,7 +167,7 @@ async function main() {
     await shared.evalJs("document.getElementById('btn-share').click(); 'ok'");
     await waitFor(() => shared.evalJs("!!window.__shared"), "share handed to bridge");
     const out = await shared.evalJs("window.__shared");
-    check("share-out: bytes reach the bridge with a scrubbed name", out.size > 1000 && /^image-[a-z2-9]{3}\.jpg$/.test(out.name), JSON.stringify(out));
+    check("share-out: bytes reach the bridge with a scrubbed name", out.size > 1000 && /^image-[a-z2-9]{5}\.jpg$/.test(out.name), JSON.stringify(out));
     await shared.evalJs("document.getElementById('btn-save').click(); 'ok'");
     await waitFor(() => shared.evalJs("!!window.__saved"), "save handed to bridge");
     shared.close();
