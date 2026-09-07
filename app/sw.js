@@ -3,7 +3,7 @@
 // which is deleted on pickup, purged on every boot, and never served to a
 // GET.
 
-const VERSION = "sepia-v0.1.0";
+const VERSION = "sepia-v0.2.0";
 const SHARE_CACHE = "sepia-share";
 
 const PRECACHE = [

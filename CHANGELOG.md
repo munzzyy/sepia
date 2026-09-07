@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.0
+
+The iOS round.
+
+- An iOS wrapper in `ios/`: the same app in a WKWebView on the permanent
+  `sepia://localhost` origin, with Save and Share handing the scrubbed file
+  to the system share sheet, and a loud failure if a build ever ships
+  without that bridge. Build-from-source with Xcode; docs/IOS.md tells the
+  whole truth, including what Android still does better.
+- The complaint-hunt round: rem typography so browser text settings work,
+  focus and announcement fixes, forced-colors support, an untimed discard
+  confirm, a spelled-out VoiceOver route to a fully scrubbed export, and
+  honest copy for every iPhone path that exists today.
+- CI builds the iOS wrapper on macOS on every push and fails if a
+  permission prompt ever appears in it.
+
 ## 0.1.0
 
 First release.

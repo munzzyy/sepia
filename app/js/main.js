@@ -13,7 +13,7 @@ import { isWrapper, isBundled, isIOSWrapped, wrapperVersion, shareOut, saveOut, 
 import { setLocale, resolveLocale, translateDom, t, LOCALE_CHOICES, currentLocale } from "./i18n.js";
 import { $, toast, announce, showScreen, riskPill, renderXray, setXrayOpen, renderProof, releaseUrls, copyGpsAction } from "./ui.js";
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 
 globalThis.__sepiaErrors = [];
 window.addEventListener("error", (ev) => __sepiaErrors.push(String(ev.message)));
