@@ -1,5 +1,7 @@
 # Sepia
 
+[![release](https://img.shields.io/github/v/release/munzzyy/sepia)](https://github.com/munzzyy/sepia/releases/latest) [![ci](https://github.com/munzzyy/sepia/actions/workflows/ci.yml/badge.svg)](https://github.com/munzzyy/sepia/actions/workflows/ci.yml) [![license: MIT](https://img.shields.io/badge/license-MIT-8a4b1f)](LICENSE)
+
 Share images without oversharing.
 
 A photo of your dog can hand out your home address. Phone cameras write GPS
@@ -11,16 +13,17 @@ that motion-photo mode glued on after the image data. And people keep
 
 Sepia is the step before you hit send. Open the image and it shows you
 everything the file says about you, ranked by how much it hurts, in plain
-words. GPS isn't a tag dump, it's "this image says exactly where it was
-taken" with the coordinates. The hidden thumbnail isn't a hex offset, you
-get shown the actual second image. Black out or pixelate what you want gone
-and the marks are drawn into the pixels. Then it exports by re-encoding
-from the canvas, so the new file is built from pixels alone and the
-original container never touches it.
+words: GPS becomes "this image says exactly where it was taken" with the
+coordinates, and the hidden thumbnail gets shown to you as the actual
+second image. Black out or pixelate what you want gone and the marks are
+drawn into the pixels. Then it exports by re-encoding from the canvas, so
+the new file is built from pixels alone and the original container never
+touches it.
 
-The part I care about most: after export, Sepia opens its own output and
-runs the same X-ray on it that judged the original, then shows you what is
-still inside. Every scrubber promises a clean file. This one checks.
+The proof screen is why this exists. After export, Sepia opens its own
+output and runs the same X-ray on it that judged the original, then shows
+you what's still inside. Every scrubber promises a clean file. This one
+checks, in front of you, every time.
 
 Nothing leaves your device. The web app makes no requests beyond loading
 its own files, works offline once loaded, and installs from the browser
@@ -28,6 +31,18 @@ menu. The Android app takes it further: there is no INTERNET permission in
 the manifest, so the OS refuses every connection the app could ever try to
 make. You don't have to trust a privacy policy, you can read four lines of
 XML.
+
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="31%" alt="The X-ray panel listing what a photo leaks, each item ranked by severity">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="31%" alt="The proof screen after export: checked clean, with everything that was removed">
+</p>
+
+## Get it
+
+Grab [sepia.apk](https://github.com/munzzyy/sepia/releases/latest/download/sepia.apk)
+and install it; that link tracks the current release, which is exactly
+what Obtainium wants. Or skip the install entirely: `app/` is the whole
+web app, no build step, serve it from anything that can serve files.
 
 ## Check the claims, don't take them
 

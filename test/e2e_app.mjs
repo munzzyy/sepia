@@ -7,7 +7,7 @@
 // Run from the repo root:  node test/e2e_app.mjs
 
 import { spawn, execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -371,10 +371,10 @@ async function main() {
     check("demo: iptc present", demoReport.items.some((i) => i.id === "iptc"));
 
     await c.evalJs("document.getElementById('btn-close').click(); 'ok'");
-    const cleanBytes = readFileSync(path.join(ROOT, "test", "fixtures", "clean.jpg"));
-    writeFileSync(path.join(profile, "clean.jpg"), cleanBytes);
     const input2 = (await c.send("DOM.querySelector", { nodeId: (await c.send("DOM.getDocument")).result.root.nodeId, selector: "#file-input" })).result;
-    await c.send("DOM.setFileInputFiles", { nodeId: input2.nodeId, files: [path.join(profile, "clean.jpg")] });
+    // Fed from the repo tree: CI runners' chromium cannot always read files
+    // living in another process's temp directory.
+    await c.send("DOM.setFileInputFiles", { nodeId: input2.nodeId, files: [path.join(ROOT, "test", "fixtures", "clean.jpg")] });
     await waitFor(() => c.evalJs("__sepiaApi.state.screen === 'edit'"), "clean fixture open");
     const cleanReport = await c.evalJs("__sepiaApi.state.report");
     check("negative control: clean input reports no serious leaks", cleanReport.counts.high === 0 && cleanReport.counts.medium === 0, JSON.stringify(cleanReport.counts));
