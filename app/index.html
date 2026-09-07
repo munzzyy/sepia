@@ -119,6 +119,33 @@
   <p id="about-site" class="about-line" hidden><a href="https://github.com/munzzyy/sepia" data-i18n>About Sepia</a></p>
 </section>
 
+<!-- ============================================================ triage -->
+<section id="screen-triage" class="screen" hidden>
+  <div class="triage-inner">
+    <button id="btn-triage-cancel" class="icon-btn" data-i18n-attr="aria-label" aria-label="Cancel" title="Cancel">✕</button>
+    <h2 id="triage-title" tabindex="-1"></h2>
+    <p class="triage-sub" data-i18n>Scrub every image's metadata at once with no editing, or open them one by one to ink and pixelate by hand.</p>
+    <ul id="triage-list" class="triage-list"></ul>
+    <div class="triage-actions">
+      <button id="btn-scrub-all" class="btn-primary" data-testid="scrub-all" data-i18n>Scrub all, metadata only</button>
+      <button id="btn-triage-each" class="btn-ghost" data-testid="edit-each" data-i18n>Edit one by one</button>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================== batch proof -->
+<section id="screen-batch" class="screen" hidden>
+  <div class="batch-inner">
+    <h2 id="batch-title" tabindex="-1"></h2>
+    <p id="batch-sub" class="batch-sub"></p>
+    <ul id="batch-list" class="batch-list"></ul>
+    <div class="batch-actions">
+      <button id="btn-batch-save-all" class="btn-primary" data-testid="save-all" data-i18n>Save all</button>
+      <button id="btn-batch-again" class="btn-ghost" data-testid="batch-again" data-i18n>Start over</button>
+    </div>
+  </div>
+</section>
+
 <!-- =========================================================== editor -->
 <section id="screen-edit" class="screen" hidden>
   <header class="edit-top">
@@ -212,6 +239,7 @@
     <div class="done-actions">
       <button id="btn-share" class="btn-primary" data-testid="share" data-i18n>Share</button>
       <button id="btn-save" class="btn-primary" data-testid="save" data-i18n>Save</button>
+      <button id="btn-copy" class="btn-ghost" hidden data-testid="copy" data-i18n>Copy image</button>
     </div>
 
     <button id="btn-again" class="btn-ghost" data-testid="again" data-i18n>Scrub another image</button>

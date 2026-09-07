@@ -11,7 +11,10 @@ import { findCodes, codesSupported } from "./barcodes.js";
 import { createCanvasView } from "./canvasview.js";
 import { isWrapper, isBundled, isIOSWrapped, wrapperVersion, shareOut, saveOut, sharedTokens, onShared } from "./platform.js";
 import { setLocale, resolveLocale, translateDom, t, LOCALE_CHOICES, currentLocale } from "./i18n.js";
-import { $, toast, announce, showScreen, riskPill, renderXray, setXrayOpen, renderProof, releaseUrls, copyGpsAction } from "./ui.js";
+import {
+  $, toast, announce, showScreen, riskPill, renderXray, setXrayOpen, renderProof, releaseUrls,
+  copyGpsAction, copyImageAction, renderTriage, markTriageRow, renderBatchDone,
+} from "./ui.js";
 
 const VERSION = "0.2.0";
 
@@ -36,6 +39,17 @@ let closeArmed = false;
 let armedFor = null;
 let xrayAutoOpened = false;
 let lastFormat = null;
+// Filled in by runBatchScrub, read by the "Save all" button; cleared on the
+// next queue so a stale batch's downloads cannot resurface later. Also
+// exposed on window (like __sepiaApi) so e2e can re-verify the exported
+// bytes of every batch member outside the app, not just the last one.
+let batchResults = [];
+function setBatchResults(next) {
+  batchResults = next;
+  globalThis.__sepiaBatchResults = batchResults;
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Discarding work needs an explicit second action, not a decaying timer: a
 // screen-reader or motor-impaired user who takes longer than a few seconds
@@ -67,7 +81,7 @@ function armDiscard(which) {
 const app = {
   get state() {
     return {
-      screen: ["start", "edit", "done"].find((s) => !$(`screen-${s}`).hidden) || "none",
+      screen: ["start", "edit", "done", "triage", "batch"].find((s) => !$(`screen-${s}`).hidden) || "none",
       hasSession: !!session,
       ops: session ? paintOps(session.editor).length : 0,
       report: session?.report ?? null,
@@ -178,16 +192,107 @@ async function advanceQueue() {
   return false;
 }
 
+// Single entry point for every intake path (picked files, drag-drop,
+// share-target, the wrapper's share queue). One image goes straight into the
+// editor exactly as it always has; more than one stops at triage first, so
+// the existing single-image flow never gains a screen it did not have.
+async function enterQueue(entries) {
+  queue = entries;
+  xrayAutoOpened = false;
+  setBatchResults([]);
+  if (queue.length > 1) {
+    showScreen("triage");
+    renderTriage(queue);
+    return;
+  }
+  await advanceQueue();
+}
+
 async function openFiles(files) {
   const images = [...files].filter((f) => f.type.startsWith("image/") || /\.(jpe?g|png|webp|gif|bmp|avif)$/i.test(f.name));
   if (!images.length) {
     toast(t("That does not look like an image."));
     return;
   }
-  queue = images.map((file) => ({ kind: "file", file }));
-  xrayAutoOpened = false;
-  if (images.length > 1) toast(t("{count} images queued", { count: images.length }));
-  await advanceQueue();
+  await enterQueue(images.map((file) => ({ kind: "file", file })));
+}
+
+// Reads one queue entry's bytes without touching session state: used by the
+// batch path, which never opens an editing session for the images it scrubs.
+async function readEntryBytes(entry) {
+  if (entry.kind === "file") {
+    const file = entry.file;
+    return { bytes: new Uint8Array(await file.arrayBuffer()), name: file.name, mime: file.type };
+  }
+  // Not a network call: same-origin /shared/<token> is the wrapper's local
+  // hand-off, served by the Android WebViewAssetLoader (see openEntry
+  // above, which does the identical fetch for the single-image path).
+  const res = await fetch(`/shared/${entry.token}`);
+  if (!res.ok) throw new Error(String(res.status));
+  return { bytes: new Uint8Array(await res.arrayBuffer()), name: "", mime: res.headers.get("content-type") || "" };
+}
+
+// Metadata-only scrub of one queue entry: decode, re-encode through the same
+// bake()/encode() path a hand-edited export uses but with an untouched
+// editor (no ops, no crop), then verify the output the same way. Any failure
+// at any step fails that file closed (excluded from "clean", never silently
+// counted) without aborting the rest of the batch.
+async function scrubOne(entry, index) {
+  let bytes, name, mime;
+  try {
+    ({ bytes, name, mime } = await readEntryBytes(entry));
+  } catch (err) {
+    __sepiaErrors.push(`batch-read ${index}: ${err}`);
+    return { name: entry.kind === "file" ? entry.file.name : "", ok: false, reason: t("Could not read this file.") };
+  }
+  let report;
+  try {
+    report = await inspectImage(bytes);
+  } catch (err) {
+    __sepiaErrors.push(`batch-inspect ${index}: ${err}`);
+    return { name, ok: false, reason: t("Could not read this file's structure.") };
+  }
+  let bitmap;
+  try {
+    bitmap = await decodeBitmap(new Blob([bytes], { type: mime || undefined }));
+  } catch {
+    return { name, ok: false, reason: t("Could not open this image.") };
+  }
+  try {
+    const editor = createEditor(bitmap.width, bitmap.height);
+    const srcIsPng = report.format === "png" || report.format === "gif" || report.format === "bmp";
+    const type = srcIsPng ? "image/png" : "image/jpeg";
+    const canvas = bake(bitmap, editor);
+    const blob = await encode(canvas, type, type === "image/jpeg" ? 0.9 : undefined);
+    const outBytes = new Uint8Array(await blob.arrayBuffer());
+    const verify = await verifyClean(outBytes);
+    return { name, ok: true, outName: scrubbedName(type), blob, verify, type };
+  } catch (err) {
+    __sepiaErrors.push(`batch-export ${index}: ${err}`);
+    return { name, ok: false, reason: t("Could not encode this image.") };
+  } finally {
+    bitmap?.close?.();
+  }
+}
+
+async function runBatchScrub() {
+  const entries = queue.slice();
+  queue = [];
+  const results = entries.map(() => null);
+  setBatchResults(results);
+  $("btn-scrub-all").disabled = true;
+  $("btn-triage-each").disabled = true;
+  announce(t("Scrubbing {count} images…", { count: entries.length }));
+  for (let i = 0; i < entries.length; i++) {
+    const result = await scrubOne(entries[i], i);
+    results[i] = result;
+    markTriageRow(i, result);
+  }
+  $("btn-scrub-all").disabled = false;
+  $("btn-triage-each").disabled = false;
+  showScreen("batch");
+  renderBatchDone(results, { saveOne: (r) => saveOut(r.blob, r.outName) });
+  announce($("batch-title").textContent);
 }
 
 async function openDemo() {
@@ -410,6 +515,10 @@ function wireEvents() {
   const dropzone = $("dropzone");
   const fileInput = $("file-input");
   dropzone.addEventListener("click", () => fileInput.click());
+  dropzone.addEventListener("pointerdown", () => dropzone.classList.add("press"));
+  for (const ev of ["pointerup", "pointerleave", "pointercancel"]) {
+    dropzone.addEventListener(ev, () => dropzone.classList.remove("press"));
+  }
   dropzone.addEventListener("keydown", (ev) => {
     if (ev.key === "Enter" || ev.key === " ") {
       ev.preventDefault();
@@ -460,6 +569,26 @@ function wireEvents() {
 
   $("btn-skip").addEventListener("click", async () => {
     if (!(await advanceQueue())) toast(t("No more images in the queue."));
+  });
+
+  $("btn-scrub-all").addEventListener("click", runBatchScrub);
+  $("btn-triage-each").addEventListener("click", () => advanceQueue());
+  $("btn-triage-cancel").addEventListener("click", () => {
+    queue = [];
+    showScreen("start");
+  });
+  $("btn-batch-again").addEventListener("click", () => {
+    setBatchResults([]);
+    resetAll();
+  });
+  $("btn-batch-save-all").addEventListener("click", async () => {
+    for (const r of batchResults) {
+      if (!r.ok) continue;
+      await saveOut(r.blob, r.outName);
+      // A burst of same-tick downloads gets throttled or blocked by some
+      // browsers; a small gap between saves keeps each one landing.
+      await sleep(250);
+    }
   });
 
   $("btn-del-box").addEventListener("click", () => {
@@ -535,6 +664,9 @@ function wireEvents() {
     const how = await saveOut(session.exported.blob, session.exported.name);
     if (how === "download") toast(t("Sharing is not available here, so it downloaded instead."));
     else if (how === "unsupported") toast(t("This build cannot hand the file to another app yet. Update Sepia, or use the web version."), 6000);
+  });
+  $("btn-copy").addEventListener("click", () => {
+    if (session?.exported) copyImageAction(session.exported.blob);
   });
   $("btn-save").addEventListener("click", async () => {
     if (!session?.exported) return;
@@ -693,17 +825,11 @@ async function boot() {
 
   onShared(async (tokens) => {
     if (!tokens.length) return;
-    queue = tokens.map((token) => ({ kind: "token", token }));
-    xrayAutoOpened = false;
-    if (tokens.length > 1) toast(t("{count} images queued", { count: tokens.length }));
-    await advanceQueue();
+    await enterQueue(tokens.map((token) => ({ kind: "token", token })));
   });
   const tokens = sharedTokens();
   if (tokens.length) {
-    queue = tokens.map((token) => ({ kind: "token", token }));
-    xrayAutoOpened = false;
-    if (tokens.length > 1) toast(t("{count} images queued", { count: tokens.length }));
-    await advanceQueue();
+    await enterQueue(tokens.map((token) => ({ kind: "token", token })));
   }
 
   // A share_target launch lands with ?share-target=1; the worker parked the
