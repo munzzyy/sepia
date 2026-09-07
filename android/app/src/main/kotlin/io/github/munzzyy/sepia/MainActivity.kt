@@ -108,11 +108,11 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (takeShared(intent)) {
-            // The page is live; hand the first new token over as a call
-            // (tokens are hex, safe to embed in a JS string literal).
-            val token = shared.lastOrNull()?.first ?: return
+            // The page is live; hand over EVERY outstanding token, or a
+            // multi-share to a warm instance would drop all but one image.
+            // The JSON is hex strings and brackets, safe to embed.
             webView.evaluateJavascript(
-                "globalThis.__sepiaShared && __sepiaShared(\"$token\")",
+                "globalThis.__sepiaShared && __sepiaShared(${sharedTokensJson()})",
                 null,
             )
         }

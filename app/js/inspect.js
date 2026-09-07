@@ -198,7 +198,18 @@ async function inspectJpeg(bytes, out) {
         break;
       case "comment": {
         const text = (utf8(bytes, seg.payloadOff, Math.min(seg.payloadLen, 512)) || "").trim();
-        if (text) items.push({ id: "comment", severity: "medium", label: "Comment", value: text.slice(0, 120) });
+        if (text) {
+          items.push({ id: "comment", severity: "medium", label: "Comment", value: text.slice(0, 120) });
+        } else if (seg.payloadLen > 0) {
+          // A comment of pure whitespace or binary is still a payload; an
+          // empty report line here would let it ride through as "clean".
+          items.push({
+            id: "comment",
+            severity: "medium",
+            label: "Comment",
+            value: `${seg.payloadLen.toLocaleString()} bytes, not readable text`,
+          });
+        }
         break;
       }
       case "jfif":
@@ -225,6 +236,15 @@ async function inspectJpeg(bytes, out) {
       detail: "Vendor-specific data this X-ray cannot itemize. Re-encoding removes it all the same.",
     });
   }
+  if (scan.stray > 8) {
+    items.unshift({
+      id: "stray",
+      severity: "high",
+      label: "Stray data between segments",
+      value: `${scan.stray.toLocaleString()} bytes outside any marker`,
+      detail: "Bytes hidden between the image's structural blocks. Re-encoding removes them.",
+    });
+  }
   if (scan.incomplete) {
     out.incomplete = true;
     items.unshift({
@@ -248,6 +268,15 @@ async function inspectJpeg(bytes, out) {
   }
 }
 
+// Structural and color chunks a normal encoder writes; anything else must
+// show up in the report, not vanish (a custom ancillary chunk carries data
+// exactly as well as a tEXt).
+const PNG_BENIGN = new Set([
+  "IHDR", "PLTE", "IDAT", "IEND", "tRNS", "gAMA", "cHRM", "sRGB", "sBIT",
+  "bKGD", "hIST", "pHYs", "sPLT", "acTL", "fcTL", "fdAT",
+]);
+const PNG_HANDLED = new Set(["tEXt", "zTXt", "iTXt", "eXIf", "tIME", "iCCP"]);
+
 async function inspectPng(bytes, out) {
   const scan = scanPng(bytes);
   if (!scan.ok) {
@@ -255,6 +284,23 @@ async function inspectPng(bytes, out) {
     return;
   }
   const items = out.items;
+  let unknown = 0;
+  let unknownBytes = 0;
+  for (const chunk of scan.chunks) {
+    if (!PNG_BENIGN.has(chunk.type) && !PNG_HANDLED.has(chunk.type)) {
+      unknown++;
+      unknownBytes += chunk.payloadLen;
+    }
+  }
+  if (unknown) {
+    items.push({
+      id: "chunk-unknown",
+      severity: "medium",
+      label: "Unrecognized data blocks",
+      value: `${unknown} chunk(s), ${unknownBytes.toLocaleString()} bytes`,
+      detail: "Nonstandard data this X-ray cannot itemize. Re-encoding removes it all the same.",
+    });
+  }
   for (const chunk of scan.chunks) {
     if (chunk.type === "tEXt" || chunk.type === "zTXt" || chunk.type === "iTXt") {
       const decoded = await pngText(bytes, chunk);
@@ -302,11 +348,31 @@ async function inspectPng(bytes, out) {
   }
 }
 
+const WEBP_BENIGN = new Set(["VP8 ", "VP8L", "VP8X", "ALPH", "ANIM", "ANMF"]);
+const WEBP_HANDLED = new Set(["EXIF", "XMP ", "ICCP"]);
+
 async function inspectWebp(bytes, out) {
   const scan = scanWebp(bytes);
   if (!scan.ok) {
     out.ok = false;
     return;
+  }
+  let unknown = 0;
+  let unknownBytes = 0;
+  for (const chunk of scan.chunks) {
+    if (!WEBP_BENIGN.has(chunk.type) && !WEBP_HANDLED.has(chunk.type)) {
+      unknown++;
+      unknownBytes += chunk.payloadLen;
+    }
+  }
+  if (unknown) {
+    out.items.push({
+      id: "chunk-unknown",
+      severity: "medium",
+      label: "Unrecognized data blocks",
+      value: `${unknown} chunk(s), ${unknownBytes.toLocaleString()} bytes`,
+      detail: "Nonstandard data this X-ray cannot itemize. Re-encoding removes it all the same.",
+    });
   }
   for (const chunk of scan.chunks) {
     if (chunk.type === "EXIF") {

@@ -72,6 +72,11 @@ export function sharedTokens() {
   }
 }
 
+// The wrapper calls __sepiaShared with an array of tokens (a legacy single
+// string is normalized so an old wrapper still works with a new page).
 export function onShared(cb) {
-  globalThis.__sepiaShared = cb;
+  globalThis.__sepiaShared = (payload) => {
+    const tokens = Array.isArray(payload) ? payload : payload ? [String(payload)] : [];
+    cb(tokens.filter((x) => typeof x === "string" && x));
+  };
 }

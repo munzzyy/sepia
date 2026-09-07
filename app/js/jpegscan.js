@@ -66,9 +66,13 @@ export function scanJpeg(bytes) {
   let i = 2;
   let eoiEnd = null;
   let broke = false;
+  // Bytes sitting between segments that belong to no marker: tolerated so
+  // sloppy-but-real files still scan, counted so a payload hidden between
+  // markers cannot ride through unreported.
+  let stray = 0;
   while (i + 1 < bytes.length) {
     if (bytes[i] !== 0xff) {
-      // Garbage between segments; tolerate a small run, then give up.
+      stray++;
       i++;
       continue;
     }
@@ -121,7 +125,7 @@ export function scanJpeg(bytes) {
   } else if (broke && i < bytes.length) {
     trailer = { off: i, len: bytes.length - i };
   }
-  return { ok: true, segments, eoiEnd, trailer, incomplete };
+  return { ok: true, segments, eoiEnd, trailer, incomplete, stray };
 }
 
 // The Exif payload minus its "Exif\0\0" prefix, as a subarray into the file.

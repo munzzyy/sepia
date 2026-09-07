@@ -75,6 +75,9 @@ self.addEventListener("fetch", (event) => {
           const form = await event.request.formData();
           const files = form.getAll("image").filter((f) => f && f.size && f.size <= 100 * 1024 * 1024);
           const cache = await caches.open(SHARE_CACHE);
+          // A crashed earlier pickup must not leak stale images into this
+          // batch: the parking lot is emptied before every new share.
+          for (const req of await cache.keys()) await cache.delete(req);
           let n = 0;
           for (const file of files.slice(0, 50)) {
             await cache.put(

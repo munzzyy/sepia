@@ -14,12 +14,15 @@ import {
   buildTiff,
   sampleExifSpec,
   buildExifSegment,
+  buildCommentSegment,
   buildPng,
   structuralWebp,
   injectWebpChunks,
   concat,
+  crc32,
   str,
   u16be,
+  u32be,
   u32le,
 } from "./fixtures.mjs";
 
@@ -127,4 +130,54 @@ test("negative control: canvas-style clean output still verifies clean", async (
   assert.equal(clean, true);
   const { clean: pngClean } = await verifyClean(buildPng());
   assert.equal(pngClean, true);
+});
+
+// ---- cross-model audit round (Gemini findings, all verified) ----
+
+test("stray bytes hidden between JPEG segments are reported", async () => {
+  const clean = structuralJpeg({ segments: [buildCommentSegment("x")] });
+  // Splice a payload after the first segment, outside any marker.
+  const at = 2 + 2 + 2 + 1;
+  const hidden = concat(clean.subarray(0, at), str("HIDDEN PAYLOAD BETWEEN SEGMENTS"), clean.subarray(at));
+  const report = await inspectImage(hidden);
+  assert.ok(report.items.some((i) => i.id === "stray"), JSON.stringify(report.items.map((i) => i.id)));
+  assert.equal((await verifyClean(hidden)).clean, false);
+});
+
+test("a COM segment of unreadable bytes still shows in the report", async () => {
+  const payload = new Uint8Array(64).fill(0x20);
+  const com = concat(Uint8Array.of(0xff, 0xfe), u16be(payload.length + 2), payload);
+  const report = await inspectImage(structuralJpeg({ segments: [com] }));
+  const item = report.items.find((i) => i.id === "comment");
+  assert.ok(item, "binary comment reported");
+  assert.match(item.value, /bytes/);
+});
+
+test("custom PNG chunks are reported, standard encoder chunks are not", async () => {
+  const png = buildPng();
+  // Insert a private ancillary chunk before IEND.
+  const iendAt = png.length - 12;
+  const secret = str("SECRET-DATA-IN-PRIVATE-CHUNK");
+  const chunkBody = concat(str("prVt"), secret);
+  const custom = concat(
+    Uint8Array.of(0, 0, 0, secret.length),
+    chunkBody,
+    u32be(crc32(chunkBody)),
+  );
+  const withCustom = concat(png.subarray(0, iendAt), custom, png.subarray(iendAt));
+  const report = await inspectImage(withCustom);
+  assert.ok(report.items.some((i) => i.id === "chunk-unknown"), JSON.stringify(report.items.map((i) => i.id)));
+  assert.equal((await verifyClean(withCustom)).clean, false);
+  // Negative control: a bare PNG with only standard chunks stays clean.
+  assert.equal((await verifyClean(buildPng())).clean, true);
+});
+
+test("custom WebP chunks are reported", async () => {
+  const base = structuralWebp();
+  const secret = str("SECRET8!");
+  const chunk = concat(str("SECR"), u32le(secret.length), secret);
+  const withCustom = concat(base, chunk);
+  withCustom.set(u32le(withCustom.length - 8), 4);
+  const report = await inspectImage(withCustom);
+  assert.ok(report.items.some((i) => i.id === "chunk-unknown"), JSON.stringify(report.items.map((i) => i.id)));
 });

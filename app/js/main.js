@@ -642,10 +642,12 @@ async function boot() {
     if (files.length) await openFiles(files);
   });
 
-  onShared((token) => {
-    queue = [];
+  onShared(async (tokens) => {
+    if (!tokens.length) return;
+    queue = tokens.map((token) => ({ kind: "token", token }));
     xrayAutoOpened = false;
-    openEntry({ kind: "token", token });
+    if (tokens.length > 1) toast(t("{count} images queued", { count: tokens.length }));
+    await advanceQueue();
   });
   const tokens = sharedTokens();
   if (tokens.length) {
