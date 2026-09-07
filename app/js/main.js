@@ -16,7 +16,7 @@ import {
   copyGpsAction, copyImageAction, renderTriage, markTriageRow, renderBatchDone,
 } from "./ui.js";
 
-const VERSION = "0.2.0";
+const VERSION = "0.3.0";
 
 globalThis.__sepiaErrors = [];
 window.addEventListener("error", (ev) => __sepiaErrors.push(String(ev.message)));

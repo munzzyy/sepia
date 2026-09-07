@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.0
+
+The batch round.
+
+- Batch scrub: queue several images, triage them in one view, and scrub
+  everything metadata-only in one pass. Every file runs the same bake,
+  encode, and re-verify path a hand edit uses, every verdict is fail-closed
+  on its own, and the rollup proof re-checks each exported file outside
+  the app.
+- The proof screen develops like a darkroom print, the risk pill reads as
+  the verdict, the dropzone answers your hand, X-ray rows sweep in, and
+  Copy image puts the clean file on the clipboard or says plainly that it
+  could not.
+
 ## 0.2.0
 
 The iOS round.
