@@ -266,4 +266,31 @@ export const es = {
   "Treat the report above as a minimum, not a full accounting.":
     "Toma el informe de arriba como un mínimo, no un recuento completo.",
   "AI generation prompt and settings.": "Prompt y ajustes de generación por IA.",
+
+  "Copy image": "Copiar imagen",
+  "Image copied. Careful: clipboards can be synced or kept in history.":
+    "Imagen copiada. Cuidado: los portapapeles pueden sincronizarse o guardarse en el historial.",
+  "Could not copy the image; your browser blocked it. Use Share or Save instead.":
+    "No se pudo copiar la imagen; tu navegador lo bloqueó. Usa Compartir o Guardar en su lugar.",
+
+  "Scrub every image's metadata at once with no editing, or open them one by one to ink and pixelate by hand.":
+    "Limpia los metadatos de todas las imágenes a la vez sin editar, o ábrelas una por una para tapar y pixelar a mano.",
+  "Scrub all, metadata only": "Limpiar todas, solo metadatos",
+  "Edit one by one": "Editar una por una",
+  "Waiting…": "Esperando…",
+  "Clean": "Limpia",
+  "Untitled image": "Imagen sin título",
+  "Shared image {n}": "Imagen compartida {n}",
+  "Scrubbing {count} images…": "Limpiando {count} imágenes…",
+  "{clean} of {total} came back clean": "{clean} de {total} volvieron limpias",
+  "{count} could not be processed and were skipped.": "{count} no se pudieron procesar y se omitieron.",
+  "Every file was re-opened and re-scanned after export, the same check a single image gets.":
+    "Cada archivo se volvió a abrir y a escanear después de exportar, la misma revisión que recibe una sola imagen.",
+  "Image {n}": "Imagen {n}",
+  "Save all": "Guardar todas",
+  "Start over": "Empezar de nuevo",
+  "Could not read this file.": "No se pudo leer este archivo.",
+  "Could not read this file's structure.": "No se pudo leer la estructura de este archivo.",
+  "Could not open this image.": "No se pudo abrir esta imagen.",
+  "Could not encode this image.": "No se pudo codificar esta imagen.",
 };

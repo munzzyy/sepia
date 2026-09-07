@@ -31,7 +31,8 @@ export function announce(msg) {
   $("sr-live").textContent = msg;
 }
 
-const SCREENS = ["start", "edit", "done"];
+const SCREENS = ["start", "edit", "done", "triage", "batch"];
+const FOCUS_TARGET = { done: "done-title", start: "dropzone", triage: "triage-title", batch: "batch-title" };
 export function showScreen(name) {
   for (const s of SCREENS) $(`screen-${s}`).hidden = s !== name;
   if (name === "edit") {
@@ -51,9 +52,8 @@ export function showScreen(name) {
     firstScreenShown = true;
     return;
   }
-  if (name === "done") $("done-title").focus({ preventScroll: true });
-  else if (name === "start") $("dropzone").focus({ preventScroll: true });
-  else $("canvas").focus({ preventScroll: true });
+  const targetId = FOCUS_TARGET[name];
+  $(targetId ? targetId : "canvas").focus({ preventScroll: true });
 }
 
 let firstScreenShown = false;
@@ -105,8 +105,9 @@ export function renderXray(report, actions) {
     return;
   }
 
-  for (const item of report.items) {
+  report.items.forEach((item, i) => {
     const li = document.createElement("li");
+    li.style.setProperty("--i", String(i));
     const sev = document.createElement("span");
     sev.className = `sev sev-${item.severity}`;
     sev.textContent = severityWord(item.severity);
@@ -150,7 +151,92 @@ export function renderXray(report, actions) {
       );
     }
     list.append(li);
+  });
+}
+
+// ------------------------------------------------------------- triage
+
+function entryName(entry, i) {
+  if (entry.kind === "file") return entry.file.name || t("Untitled image");
+  return t("Shared image {n}", { n: i + 1 });
+}
+
+export function renderTriage(entries) {
+  $("triage-title").textContent = t("{count} images queued", { count: entries.length });
+  const list = $("triage-list");
+  list.textContent = "";
+  entries.forEach((entry, i) => {
+    const li = document.createElement("li");
+    li.className = "triage-row";
+    li.dataset.index = String(i);
+    const name = document.createElement("span");
+    name.className = "triage-name";
+    name.textContent = entryName(entry, i);
+    const status = document.createElement("span");
+    status.className = "triage-status";
+    status.textContent = t("Waiting…");
+    li.append(name, status);
+    list.append(li);
+  });
+}
+
+// Marks one triage row with the real verdict as batch processing reaches it:
+// a queue of forty images should not sit on a blank screen until the last
+// one finishes.
+export function markTriageRow(index, result) {
+  const row = $("triage-list").querySelector(`[data-index="${index}"]`);
+  if (!row) return;
+  const status = row.querySelector(".triage-status");
+  if (!result.ok) {
+    row.classList.add("fail");
+    status.textContent = result.reason;
+  } else if (result.verify.clean) {
+    row.classList.add("clean");
+    status.textContent = t("Clean");
+  } else {
+    row.classList.add("leftover");
+    status.textContent = t("Something survived");
   }
+}
+
+// ------------------------------------------------------------ batch proof
+
+export function renderBatchDone(results, actions) {
+  const total = results.length;
+  const failed = results.filter((r) => !r.ok).length;
+  const clean = results.filter((r) => r.ok && r.verify.clean).length;
+  $("batch-title").textContent = t("{clean} of {total} came back clean", { clean, total });
+  $("batch-sub").textContent = failed
+    ? t("{count} could not be processed and were skipped.", { count: failed })
+    : t("Every file was re-opened and re-scanned after export, the same check a single image gets.");
+  const list = $("batch-list");
+  list.textContent = "";
+  results.forEach((r, i) => {
+    const li = document.createElement("li");
+    li.className = "batch-row";
+    const name = document.createElement("span");
+    name.className = "batch-name";
+    name.textContent = r.name || t("Image {n}", { n: i + 1 });
+    const verdict = document.createElement("span");
+    verdict.className = "batch-verdict";
+    if (!r.ok) {
+      verdict.classList.add("fail");
+      verdict.textContent = r.reason;
+    } else if (r.verify.clean) {
+      verdict.classList.add("clean");
+      verdict.textContent = t("Checked clean");
+    } else {
+      verdict.classList.add("leftover");
+      verdict.textContent = t("Something survived");
+    }
+    li.append(name, verdict);
+    if (r.ok) {
+      const save = actionButton(t("Save"), () => actions.saveOne(r));
+      li.append(save);
+    }
+    list.append(li);
+  });
+  $("btn-batch-save-all").hidden = total - failed === 0;
 }
 
 function actionButton(label, onClick) {
@@ -251,11 +337,24 @@ export function renderProof({ report, editor, verify, blob, name, origName }) {
   }
 
   $("done-size").textContent = formatSize(blob.size);
+  $("btn-copy").hidden = !clipboardImageSupported();
 }
 
 export function formatSize(n) {
   if (n > 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
   return `${Math.max(1, Math.round(n / 1024))} KB`;
+}
+
+// Feature-detected once per call: only Chromium and Safari expose
+// ClipboardItem, and a browser that lacks it must never show a button that
+// silently does nothing when pressed.
+const clipboardImageSupported = () => !!(navigator.clipboard?.write && typeof ClipboardItem !== "undefined");
+
+export function copyImageAction(blob) {
+  navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]).then(
+    () => toast(t("Image copied. Careful: clipboards can be synced or kept in history.")),
+    () => toast(t("Could not copy the image; your browser blocked it. Use Share or Save instead."), 5000),
+  );
 }
 
 export function copyGpsAction(gps) {

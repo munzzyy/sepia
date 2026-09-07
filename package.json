@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "e2e": "node test/e2e_app.mjs && node test/e2e_wrapper.mjs",
+    "e2e": "node test/e2e_app.mjs && node test/e2e_wrapper.mjs && node test/e2e_batch.mjs",
     "check": "bash tools/check-clean.sh",
     "fixtures": "node tools/gen-fixtures.mjs"
   },
