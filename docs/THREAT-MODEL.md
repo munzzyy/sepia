@@ -91,9 +91,17 @@ rides along in a device transfer.
 Three things. Your browser or WebView's image decoder and canvas encoder,
 which already handle every image you look at, so that trust is not new.
 Sepia's own code, which is a few thousand lines of dependency-free
-JavaScript plus a thin Kotlin shell, MIT licensed, honestly readable in an
-afternoon. And the site serving you the web app, or the APK signature once
-you've installed it.
+JavaScript plus a thin Kotlin shell (and, on iOS, an equally thin Swift
+one), MIT licensed, honestly readable in an afternoon. And the site serving
+you the web app, or the APK signature once you've installed it.
+
+The iOS wrapper earns the "nowhere" claim above one layer higher than
+Android does: there is no permission that removes networking from an iOS
+app the way there is on Android, so what holds the line is the page's own
+Content-Security-Policy plus a wrapper that ships no networking code of its
+own. Same behavior, weaker enforcement mechanism. The details, including
+what that guarantee does and does not cover, are in
+[docs/IOS.md](IOS.md#what-is-different-from-android-honestly).
 
 Notice what's not on the list. No server. No third-party library. No
 analytics vendor promising your data is handled respectfully. There is no

@@ -9,7 +9,7 @@ import { verifyClean } from "./verify.js";
 import { scrubbedName, nameLeaks } from "./names.js";
 import { findCodes, codesSupported } from "./barcodes.js";
 import { createCanvasView } from "./canvasview.js";
-import { isWrapper, wrapperVersion, shareOut, saveOut, sharedTokens, onShared } from "./platform.js";
+import { isWrapper, isBundled, isIOSWrapped, wrapperVersion, shareOut, saveOut, sharedTokens, onShared } from "./platform.js";
 import { setLocale, resolveLocale, translateDom, t, LOCALE_CHOICES, currentLocale } from "./i18n.js";
 import { $, toast, announce, showScreen, riskPill, renderXray, setXrayOpen, renderProof, releaseUrls, copyGpsAction } from "./ui.js";
 
@@ -31,8 +31,38 @@ let queue = [];
 let view = null;
 let tool = "ink";
 let closeArmed = false;
+// "close" | "again" | null. Which trigger button is currently swapped for
+// its inline "Discard" confirm; see armDiscard/disarmDiscard below.
+let armedFor = null;
 let xrayAutoOpened = false;
 let lastFormat = null;
+
+// Discarding work needs an explicit second action, not a decaying timer: a
+// screen-reader or motor-impaired user who takes longer than a few seconds
+// to find the confirm control must not have the warning vanish under them.
+// The trigger button hides and an inline "Discard" button takes its place,
+// staying until it is pressed or something disarms it.
+function disarmDiscard() {
+  if (!armedFor) return;
+  armedFor = null;
+  closeArmed = false;
+  $("btn-close").hidden = false;
+  $("btn-close-confirm").hidden = true;
+  $("btn-again").hidden = false;
+  $("btn-again-confirm").hidden = true;
+}
+
+function armDiscard(which) {
+  armedFor = which;
+  closeArmed = true;
+  const extra = queue.length ? t(" {count} queued images will be dropped too.", { count: queue.length }) : "";
+  announce(t("Your covers are not exported yet.") + extra);
+  const trigger = $(`btn-${which}`);
+  const confirm = $(`btn-${which}-confirm`);
+  trigger.hidden = true;
+  confirm.hidden = false;
+  confirm.focus();
+}
 
 const app = {
   get state() {
@@ -179,6 +209,7 @@ function closeSession() {
   releaseUrls();
   riskPill(null);
   setXrayOpen(false);
+  disarmDiscard();
 }
 
 function resetAll() {
@@ -338,10 +369,14 @@ function stripWebOnly() {
   $("about-site").hidden = false;
 }
 
-// The intake hint should describe this device, not a desktop.
+// The intake hint should describe this device, not a desktop. The iOS
+// wrapper gets its own line: it has no share-sheet intake (no bridge for
+// it), so it must not promise the Android wrapper's "share to Sepia".
 function fitHintToDevice() {
   if (isWrapper()) {
     $("drop-hint").textContent = t("or share a photo to Sepia from any app");
+  } else if (isIOSWrapped()) {
+    $("drop-hint").textContent = t("or pick one from your photos");
   } else if (navigator.maxTouchPoints > 0 && matchMedia("(pointer: coarse)").matches) {
     $("drop-hint").textContent = t("or share an image to Sepia once installed");
   }
@@ -410,23 +445,16 @@ function wireEvents() {
     kbdHint.hidden = true;
   });
 
-  // Discarding work needs a second tap, whether it is the close button or
-  // the platform back gesture, and the warning names the queue too.
-  const armAndWarn = () => {
-    closeArmed = true;
-    const extra = queue.length ? t(" {count} queued images will be dropped too.", { count: queue.length }) : "";
-    toast(t("Your covers are not exported yet. Tap close again to discard them.") + extra, 4000);
-    setTimeout(() => {
-      closeArmed = false;
-    }, 4000);
-  };
-
   $("btn-close").addEventListener("click", () => {
     if (session && session.editor.ops.length > 0 && !closeArmed) {
-      armAndWarn();
+      armDiscard("close");
       return;
     }
-    closeArmed = false;
+    disarmDiscard();
+    resetAll();
+  });
+  $("btn-close-confirm").addEventListener("click", () => {
+    disarmDiscard();
     resetAll();
   });
 
@@ -503,25 +531,31 @@ function wireEvents() {
   $("btn-share").addEventListener("click", async () => {
     if (!session?.exported) return;
     const ok = await shareOut(session.exported.blob, session.exported.name);
-    if (!ok) {
-      await saveOut(session.exported.blob, session.exported.name);
-      toast(t("Sharing is not available here, so it downloaded instead."));
-    }
+    if (ok) return;
+    const how = await saveOut(session.exported.blob, session.exported.name);
+    if (how === "download") toast(t("Sharing is not available here, so it downloaded instead."));
+    else if (how === "unsupported") toast(t("This build cannot hand the file to another app yet. Update Sepia, or use the web version."), 6000);
   });
   $("btn-save").addEventListener("click", async () => {
     if (!session?.exported) return;
     const how = await saveOut(session.exported.blob, session.exported.name);
-    // The wrapper's own toast reports the real outcome; a second, blind
-    // "saved!" from here would sometimes be a lie.
+    // The wrapper's own share sheet reports the real outcome for "gallery";
+    // a second, blind "saved!" from here would sometimes be a lie.
     if (how === "download") toast(t("Downloaded"));
+    else if (how === "handoff") toast(t("Choose where to save it"));
+    else if (how === "unsupported") toast(t("This build cannot hand the file to another app yet. Update Sepia, or use the web version."), 6000);
   });
 
   $("btn-again").addEventListener("click", () => {
     if (queue.length && !closeArmed) {
-      armAndWarn();
+      armDiscard("again");
       return;
     }
-    closeArmed = false;
+    disarmDiscard();
+    resetAll();
+  });
+  $("btn-again-confirm").addEventListener("click", () => {
+    disarmDiscard();
     resetAll();
   });
   $("btn-next").addEventListener("click", () => advanceQueue());
@@ -530,9 +564,24 @@ function wireEvents() {
     if (ev.target.tagName === "INPUT" || ev.target.tagName === "SELECT") return;
     const onEdit = session && !$("screen-edit").hidden;
     const onDone = session?.exported && !$("screen-done").hidden;
+    if (armedFor && ev.key === "Escape") {
+      const was = armedFor;
+      disarmDiscard();
+      $(`btn-${was}`).focus();
+      return;
+    }
     if (onEdit && (ev.ctrlKey || ev.metaKey) && ev.key === "Enter") {
       ev.preventDefault();
       runExport();
+      return;
+    }
+    // The canvas has its own Escape (clear the current selection) and must
+    // keep it; this only takes over when focus is not there, so it can
+    // never steal focus off the canvas mid-edit just because the drawer
+    // happens to be open.
+    if (onEdit && ev.key === "Escape" && !$("xray").hidden && document.activeElement !== $("canvas")) {
+      setXrayOpen(false);
+      $("btn-xray").focus();
       return;
     }
     if (onDone && (ev.key === "s" || ev.key === "S")) {
@@ -565,9 +614,9 @@ function wireEvents() {
     else if (session && !$("screen-edit").hidden && session.editor.ops.length > 0 && !closeArmed) {
       // The back gesture gets the same second-chance as the close button.
       history.pushState(null, "", "#edit");
-      armAndWarn();
+      armDiscard("close");
     } else if (session && location.hash === "") {
-      closeArmed = false;
+      disarmDiscard();
       resetAll();
     } else if (session) {
       showScreen("edit");
@@ -598,7 +647,7 @@ async function boot() {
   translateDom();
   buildLocalePicker();
 
-  if (isWrapper()) {
+  if (isBundled()) {
     stripWebOnly();
   } else if ("serviceWorker" in navigator && location.protocol === "https:") {
     navigator.serviceWorker.register("sw.js").catch(() => {});

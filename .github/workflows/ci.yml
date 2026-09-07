@@ -30,6 +30,28 @@ jobs:
           node tools/gen-fixtures.mjs
           npm run e2e
 
+  ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: generate the xcode project
+        run: |
+          brew install xcodegen
+          cd ios && xcodegen generate
+      - name: build for the simulator
+        run: |
+          cd ios && xcodebuild -project Sepia.xcodeproj -target Sepia \
+            -configuration Release -sdk iphonesimulator \
+            CODE_SIGNING_ALLOWED=NO SYMROOT="$PWD/build" build
+      - name: assert no permission prompts
+        run: |
+          plist=ios/build/Release-iphonesimulator/Sepia.app/Info.plist
+          out=$(plutil -p "$plist")
+          echo "$out"
+          if echo "$out" | grep -E "UsageDescription|NSAppTransportSecurity"; then
+            echo "a permission prompt or ATS exception crept into the manifest"; exit 1
+          fi
+
   android:
     runs-on: ubuntu-latest
     steps:

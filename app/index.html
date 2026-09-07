@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; webrtc 'block'">
 <title>Sepia: share images without oversharing</title>
 <meta name="description" content="Photos and screenshots carry your location, your device serials, and hidden copies of themselves. Sepia shows you everything, burns your redactions into the pixels, and proves the file it gives back is clean. All on your device.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f4ead8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#181410" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="css/app.css">
 </head>
@@ -92,7 +92,7 @@
       <h2 id="lnd-app-h" data-i18n>The Android app cannot phone home</h2>
       <p data-i18n>The Sepia app ships without the internet permission. Not "we promise not to upload", the operating system will not let it open a connection at all. Check the manifest yourself.</p>
       <p class="apk-row"><a id="apk-link" class="btn-primary" href="https://github.com/munzzyy/sepia/releases/latest/download/sepia.apk" data-i18n>Download the APK</a></p>
-      <p class="apk-note" data-i18n>Or use the web app right here. It works offline once loaded and can be installed from your browser menu.</p>
+      <p class="apk-note" data-i18n>Or use the web app right here. Once it's served over https, it works offline and can be installed: from the browser menu on Chrome and Edge, or through Share, then "Add to Home Screen" on Safari.</p>
     </section>
 
     <section class="lnd lnd-faq" aria-labelledby="lnd-faq-h">
@@ -123,6 +123,7 @@
 <section id="screen-edit" class="screen" hidden>
   <header class="edit-top">
     <button id="btn-close" class="icon-btn" data-i18n-attr="aria-label" aria-label="Close this image" title="Close">✕</button>
+    <button id="btn-close-confirm" class="btn-ghost del-chip" hidden data-testid="close-confirm" data-i18n>Discard</button>
     <div class="risk-pill" id="risk-pill" role="status"></div>
     <div class="top-actions">
       <button id="btn-del-box" class="btn-ghost del-chip" hidden data-i18n>Remove box</button>
@@ -134,7 +135,8 @@
   </header>
 
   <div id="canvas-wrap" class="canvas-wrap">
-    <canvas id="canvas" tabindex="0" data-i18n-attr="aria-label" aria-label="Image editor canvas. Press B to add a cover box, arrow keys to move it, Shift and arrows to resize, Delete to remove."></canvas>
+    <canvas id="canvas" tabindex="0" aria-describedby="canvas-a11y-note" data-i18n-attr="aria-label" aria-label="Image editor canvas. Press B to add a cover box, arrow keys to move it, Shift and arrows to resize, Delete to remove."></canvas>
+    <p id="canvas-a11y-note" class="sr-only" data-i18n>Covering a face, block of text, or code on this canvas needs a hardware keyboard; a touchscreen screen reader cannot draw a box here yet. Removing metadata does not need the canvas at all: everything the X-ray panel lists comes out on export, with or without any box drawn.</p>
     <div id="crop-bar" class="crop-bar" hidden>
       <span data-i18n>Drag to choose what to keep</span>
       <button id="btn-crop-apply" class="btn-primary" data-i18n>Apply crop</button>
@@ -213,6 +215,7 @@
     </div>
 
     <button id="btn-again" class="btn-ghost" data-testid="again" data-i18n>Scrub another image</button>
+    <button id="btn-again-confirm" class="btn-ghost del-chip" hidden data-testid="again-confirm" data-i18n>Discard and start over</button>
     <button id="btn-next" class="btn-primary" hidden></button>
   </div>
 </section>

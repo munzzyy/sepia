@@ -191,7 +191,7 @@ export function renderProof({ report, editor, verify, blob, name, origName }) {
   badge.classList.toggle("warn", !clean);
   $("done-title").textContent = clean ? t("Checked clean") : t("Something survived");
   $("done-sub").textContent = clean
-    ? t("The exported file was re-opened and re-scanned. Nothing above harmless technical detail remains.")
+    ? t("The exported file was re-opened and re-scanned. What's left is generic encoder output like color profile and format markers, nothing that names you.")
     : t("The exported file was re-scanned and something is still in it. Details below.");
 
   if (previewUrl) URL.revokeObjectURL(previewUrl);

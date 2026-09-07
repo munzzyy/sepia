@@ -49,12 +49,17 @@
    class. Without this, .crop-bar and .tool were shown while hidden. */
 [hidden] { display: none !important; }
 
+/* The root font size stays at the browser's own default (never overridden
+   in px), so every rem size below tracks the user's font-size preference
+   instead of ignoring it. */
+html { font-size: 100%; }
+
 html, body {
   margin: 0;
   padding: 0;
   background: var(--paper);
   color: var(--ink);
-  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 1rem/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   min-height: 100%;
 }
 
@@ -123,7 +128,7 @@ button {
   min-width: 44px;
   min-height: 44px;
   border-radius: 12px;
-  font-size: 19px;
+  font-size: 1.1875rem;
   color: var(--ink-soft);
 }
 .icon-btn:not([disabled]):hover { background: var(--paper-2); color: var(--ink); }
@@ -142,12 +147,12 @@ button {
 .start-hero .logo { display: block; margin: 0 auto 6px; }
 .start-hero h1 {
   margin: 0;
-  font-size: 44px;
+  font-size: 2.75rem;
   letter-spacing: 0.5px;
 }
 .tagline {
   margin: 2px 0 14px;
-  font-size: 19px;
+  font-size: 1.1875rem;
   font-weight: 600;
   color: var(--accent);
 }
@@ -171,14 +176,14 @@ button {
   border-radius: calc(var(--radius) + 6px);
   background: var(--card);
   cursor: pointer;
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 .dropzone.dragging { background: var(--medium-bg); border-style: solid; }
-.drop-hint { font-size: 14px; color: var(--ink-soft); }
+.drop-hint { font-size: 0.875rem; color: var(--ink-soft); }
 
 .offline-note {
   margin-top: 18px;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--ink-soft);
 }
 
@@ -190,7 +195,7 @@ button {
 .locale-line { text-align: center; margin-top: 26px; }
 .locale-line select {
   font: inherit;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--ink);
   background: var(--card);
   border: 1px solid var(--line);
@@ -212,7 +217,7 @@ button {
 
 .landing { margin-top: 56px; }
 .lnd { margin: 0 0 46px; }
-.lnd h2 { font-size: 26px; margin: 0 0 14px; }
+.lnd h2 { font-size: 1.625rem; margin: 0 0 14px; }
 .lnd-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -224,20 +229,22 @@ button {
   border-radius: var(--radius);
   padding: 16px 18px;
 }
-.lnd-card h3 { margin: 0 0 6px; font-size: 17px; }
-.lnd-card p { margin: 0; font-size: 14.5px; color: var(--ink-soft); }
+.lnd-card h3 { margin: 0 0 6px; font-size: 1.0625rem; }
+.lnd-card p { margin: 0; font-size: 0.90625rem; color: var(--ink-soft); }
 
 .honest-list { padding-left: 20px; color: var(--ink-soft); }
 .honest-list li { margin-bottom: 10px; }
 
 .apk-row { margin: 16px 0 6px; }
-.apk-note { font-size: 14px; color: var(--ink-soft); }
+.apk-note { font-size: 0.875rem; color: var(--ink-soft); }
 
 .lnd-faq details {
   border-bottom: 1px solid var(--line);
   padding: 10px 0;
 }
-.lnd-faq summary { cursor: pointer; font-weight: 600; min-height: 30px; }
+/* 44px is the tap-target floor everything else in the app holds; this
+   toggle used to fall short at 30px. */
+.lnd-faq summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
 .lnd-faq p { color: var(--ink-soft); }
 
 .land-footer {
@@ -247,7 +254,7 @@ button {
   padding: 18px 0 8px;
   border-top: 1px solid var(--line);
   color: var(--ink-soft);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .land-footer a { color: var(--accent); }
 
@@ -276,7 +283,7 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   font-weight: 600;
 }
 .risk-pill.high { color: var(--high); }
@@ -307,7 +314,7 @@ button {
   border-radius: var(--radius);
   padding: 8px 14px;
   box-shadow: var(--shadow);
-  font-size: 14px;
+  font-size: 0.875rem;
   max-width: calc(100% - 20px);
   flex-wrap: wrap;
   justify-content: center;
@@ -339,7 +346,9 @@ button {
   min-height: 52px;
   padding: 6px 10px;
   border-radius: 12px;
-  font-size: 12.5px;
+  /* Below the mechanical px/16 conversion (0.78125rem); bumped to the
+     0.85rem floor so the smallest labels stay readable. */
+  font-size: 0.85rem;
   color: var(--ink-soft);
   border: 1px solid transparent;
 }
@@ -348,6 +357,11 @@ button {
   border-color: var(--accent);
   color: var(--ink);
   font-weight: 650;
+}
+/* Windows high-contrast mode strips background/border colors, the only
+   signal .tool.active otherwise gives; an outline survives forced-colors. */
+@media (forced-colors: active) {
+  .tool.active { outline: 2px solid; outline-offset: -1px; }
 }
 
 .tool-icon { width: 22px; height: 22px; border-radius: 5px; display: block; }
@@ -374,7 +388,7 @@ button {
   padding: 8px 14px;
   background: var(--medium-bg);
   color: var(--ink);
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   border-top: 1px solid var(--line);
 }
 
@@ -404,7 +418,7 @@ button {
 }
 
 .xray-head { display: flex; align-items: center; justify-content: space-between; }
-.xray-head h2 { margin: 0; font-size: 20px; }
+.xray-head h2 { margin: 0; font-size: 1.25rem; }
 .xray-headline { font-weight: 650; }
 
 .xray-list { list-style: none; margin: 0; padding: 0; }
@@ -414,11 +428,13 @@ button {
   align-items: baseline;
   padding: 9px 0;
   border-bottom: 1px solid var(--line);
-  font-size: 14.5px;
+  font-size: 0.90625rem;
 }
 .sev {
   flex-shrink: 0;
-  font-size: 11.5px;
+  /* Below the mechanical px/16 conversion (0.71875rem); bumped to the
+     0.85rem floor so the severity tag stays readable. */
+  font-size: 0.85rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -430,7 +446,7 @@ button {
 .sev-low { background: var(--low-bg); color: var(--low); }
 .xray-label { font-weight: 650; }
 .xray-value { color: var(--ink-soft); overflow-wrap: anywhere; }
-.xray-detail { display: block; font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+.xray-detail { display: block; font-size: 0.8125rem; color: var(--ink-soft); margin-top: 2px; }
 .xray-act {
   margin-left: auto;
   color: var(--accent);
@@ -439,7 +455,7 @@ button {
   min-height: 44px;
   min-width: 44px;
 }
-.xray-foot { font-size: 13.5px; color: var(--ink-soft); }
+.xray-foot { font-size: 0.84375rem; color: var(--ink-soft); }
 #thumb-reveal { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; margin: 10px 0; }
 #thumb-img { image-rendering: pixelated; border-radius: 6px; }
 
@@ -455,7 +471,7 @@ button {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-size: 40px;
+  font-size: 2.5rem;
   background: var(--ok-bg);
   color: var(--ok);
 }
@@ -478,10 +494,12 @@ button {
   padding: 14px 18px;
   margin: 18px 0;
 }
-.done-report h3, .done-leftover h3 { margin: 0 0 8px; font-size: 15.5px; }
-.done-report ul, .done-leftover ul { margin: 0; padding-left: 20px; color: var(--ink-soft); font-size: 14.5px; }
-.done-name { font-size: 13.5px; color: var(--ink-soft); margin: 10px 0 0; }
-.done-report summary { cursor: pointer; min-height: 30px; }
+.done-report h3, .done-leftover h3 { margin: 0 0 8px; font-size: 0.96875rem; }
+.done-report ul, .done-leftover ul { margin: 0; padding-left: 20px; color: var(--ink-soft); font-size: 0.90625rem; }
+.done-name { font-size: 0.84375rem; color: var(--ink-soft); margin: 10px 0 0; }
+/* 44px is the tap-target floor everything else in the app holds; this
+   disclosure used to fall short at 30px. */
+.done-report summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
 .done-secret { display: block; padding: 2px 0 4px 14px; overflow-wrap: anywhere; }
 
 .done-leftover {
@@ -498,7 +516,7 @@ button {
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  font-size: 14.5px;
+  font-size: 0.90625rem;
   margin: 0 0 18px;
   border: none;
   padding: 0;
@@ -534,7 +552,7 @@ button {
   color: var(--paper);
   border-radius: var(--radius);
   padding: 10px 18px;
-  font-size: 14.5px;
+  font-size: 0.90625rem;
   box-shadow: var(--shadow);
   z-index: 50;
   max-width: min(92vw, 480px);
@@ -550,7 +568,9 @@ button {
 .kbd-hint {
   margin: 0;
   padding: 5px 14px;
-  font-size: 12.5px;
+  /* Below the mechanical px/16 conversion (0.78125rem); bumped to the
+     0.85rem floor so the hint stays readable. */
+  font-size: 0.85rem;
   color: var(--ink-soft);
   border-top: 1px solid var(--line);
   background: var(--paper);
