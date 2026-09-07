@@ -103,9 +103,17 @@ export function createCanvasView(host) {
     const px = 1 / view.scale;
 
     for (const s of host.getSuggestions()) {
+      const dash = s === focusedSuggestion ? [] : [6 * px, 4 * px];
+      const width = (s === focusedSuggestion ? 5 : 3) * px;
+      // A single orange stroke reads at maybe 1.5:1 against a mid-tone
+      // photo; a wider dark casing under it holds 3:1 against any content
+      // the way route lines do on a map.
+      ctx.setLineDash(dash);
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = width + 2 * px;
+      ctx.strokeRect(s.rect.x, s.rect.y, s.rect.w, s.rect.h);
       ctx.strokeStyle = "#d98d4a";
-      ctx.setLineDash(s === focusedSuggestion ? [] : [6 * px, 4 * px]);
-      ctx.lineWidth = (s === focusedSuggestion ? 5 : 3) * px;
+      ctx.lineWidth = width;
       ctx.strokeRect(s.rect.x, s.rect.y, s.rect.w, s.rect.h);
       ctx.setLineDash([]);
     }

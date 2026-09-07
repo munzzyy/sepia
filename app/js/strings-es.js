@@ -9,6 +9,7 @@ export const es = {
   "Choose an image": "Elige una imagen",
   "or drop one here, or paste with Ctrl+V": "o suelta una aquí, o pega con Ctrl+V",
   "or share a photo to Sepia from any app": "o comparte una foto a Sepia desde cualquier app",
+  "or pick one from your photos": "o elige una de tus fotos",
   "Try it on a sample photo": "Pruébalo con una foto de ejemplo",
   "Everything happens on this device. Nothing is uploaded, ever.":
     "Todo ocurre en este dispositivo. Nunca se sube nada.",
@@ -47,8 +48,8 @@ export const es = {
   'The Sepia app ships without the internet permission. Not "we promise not to upload", the operating system will not let it open a connection at all. Check the manifest yourself.':
     'La app de Sepia viene sin el permiso de internet. No es un "prometemos no subir nada": el sistema operativo no la deja abrir conexiones, punto. Revisa el manifiesto tú mismo.',
   "Download the APK": "Descargar el APK",
-  "Or use the web app right here. It works offline once loaded and can be installed from your browser menu.":
-    "O usa la app web aquí mismo. Funciona sin conexión una vez cargada y se puede instalar desde el menú del navegador.",
+  "Or use the web app right here. Once it's served over https, it works offline and can be installed: from the browser menu on Chrome and Edge, or through Share, then \"Add to Home Screen\" on Safari.":
+    "O usa la app web aquí mismo. Una vez servida por https, funciona sin conexión y se puede instalar: desde el menú del navegador en Chrome y Edge, o con Compartir y luego \"Agregar a inicio\" en Safari.",
   "Questions people ask": "Preguntas que hace la gente",
   "Is my image uploaded to a server?": "¿Mi imagen se sube a un servidor?",
   "No. There is no server to upload to. The page never opens a connection except to fetch its own code from this site, and the Android app cannot open connections at all.":
@@ -74,6 +75,8 @@ export const es = {
   "X-ray": "Radiografía",
   "Image editor canvas. Press B to add a cover box, arrow keys to move it, Shift and arrows to resize, Delete to remove.":
     "Lienzo del editor de imagen. Pulsa B para añadir un recuadro de cobertura, flechas para moverlo, Shift y flechas para cambiar su tamaño, Suprimir para quitarlo.",
+  "Covering a face, block of text, or code on this canvas needs a hardware keyboard; a touchscreen screen reader cannot draw a box here yet. Removing metadata does not need the canvas at all: everything the X-ray panel lists comes out on export, with or without any box drawn.":
+    "Tapar una cara, un bloque de texto o un código en este lienzo necesita un teclado físico; un lector de pantalla táctil todavía no puede dibujar un recuadro aquí. Quitar los metadatos no necesita el lienzo en absoluto: todo lo que lista el panel de radiografía sale al exportar, con o sin ningún recuadro dibujado.",
   "Drag to choose what to keep": "Arrastra para elegir qué conservar",
   "Apply crop": "Aplicar recorte",
   "Cancel": "Cancelar",
@@ -127,8 +130,8 @@ export const es = {
   "Show": "Mostrar",
   "The hidden preview image found inside the file": "La imagen de vista previa oculta encontrada dentro del archivo",
 
-  "The exported file was re-opened and re-scanned. Nothing above harmless technical detail remains.":
-    "El archivo exportado se volvió a abrir y a escanear. No queda nada por encima de detalle técnico inofensivo.",
+  "The exported file was re-opened and re-scanned. What's left is generic encoder output like color profile and format markers, nothing that names you.":
+    "El archivo exportado se volvió a abrir y a escanear. Lo que queda es salida genérica del codificador, como el perfil de color y marcadores de formato: nada que te identifique.",
   "The exported file was re-scanned and something is still in it. Details below.":
     "El archivo exportado se volvió a escanear y algo sigue dentro. Detalles abajo.",
   "Preview of the scrubbed image": "Vista previa de la imagen limpia",
@@ -157,11 +160,15 @@ export const es = {
     "Recorte aplicado. Todo lo que quede fuera de la zona clara se eliminará al exportar.",
   "Drag across the image first to choose what to keep.":
     "Primero arrastra sobre la imagen para elegir qué conservar.",
-  "Your covers are not exported yet. Tap close again to discard them.":
-    "Tus coberturas aún no se exportan. Toca cerrar otra vez para descartarlas.",
+  "Your covers are not exported yet.": "Tus coberturas aún no se exportan.",
+  "Discard": "Descartar",
+  "Discard and start over": "Descartar y empezar de nuevo",
   "Sharing is not available here, so it downloaded instead.":
     "Compartir no está disponible aquí, así que se descargó en su lugar.",
   "Downloaded": "Descargado",
+  "Choose where to save it": "Elige dónde guardarlo",
+  "This build cannot hand the file to another app yet. Update Sepia, or use the web version.":
+    "Esta versión todavía no puede entregar el archivo a otra app. Actualiza Sepia, o usa la versión web.",
   "Next image ({count} left)": "Siguiente imagen (quedan {count})",
   "B adds a box. Tab cycles boxes and found codes. Arrows move, Shift with arrows resizes, Delete removes, + and - zoom, 0 fits.":
     "B añade un recuadro. Tab recorre recuadros y códigos encontrados. Las flechas mueven, Shift con flechas cambia el tamaño, Suprimir quita, + y - hacen zoom, 0 ajusta.",
