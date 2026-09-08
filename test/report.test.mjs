@@ -8,6 +8,7 @@ import {
   buildTiff,
   sampleExifSpec,
   buildPng,
+  identityGapSpec,
 } from "./fixtures.mjs";
 
 test("gps words are hemisphere-correct", () => {
@@ -26,4 +27,13 @@ test("headline escalates by what is in the file", async () => {
 
   const identity = await inspectImage(buildPng({ text: [["Author", "Jordan Sample"]] }));
   assert.match(headline(identity), /identifies you/);
+});
+
+test("a file naming its owner never gets the clean headline, even with no GPS fix", async () => {
+  const report = await inspectImage(
+    structuralJpeg({ segments: [buildExifSegment(buildTiff(identityGapSpec()))] }),
+  );
+  assert.equal(report.gps, null, "this fixture carries no coordinates on purpose");
+  assert.doesNotMatch(headline(report), /No personal metadata/);
+  assert.match(headline(report), /identifies you/);
 });

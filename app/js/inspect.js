@@ -31,6 +31,10 @@ const HIGH_TAGS = new Set([
   "Body serial number",
   "Lens serial number",
   "Image unique ID",
+  "MakerNote",
+  "Windows author",
+  "GPS area information",
+  "GPS processing method",
 ]);
 const MEDIUM_TAGS = new Set([
   "Camera make",
@@ -49,6 +53,10 @@ const MEDIUM_TAGS = new Set([
   "Time zone (original)",
   "GPS date",
   "GPS time",
+  "Windows title",
+  "Windows comment",
+  "Windows keywords",
+  "Windows subject",
 ]);
 const HIGH_PNG_KEYWORDS = new Set(["author", "artist", "copyright", "source", "location"]);
 
@@ -67,20 +75,15 @@ function pushExifItems(items, tiff, out) {
   let settings = 0;
   let unknown = 0;
   for (const f of tiff.fields) {
-    if (f.ifd === "gps") continue;
     const name = f.name;
     if (!name) {
       unknown++;
       continue;
     }
-    if (HIGH_TAGS.has(name)) {
-      const text = fmtValue(f.value);
-      if (text) items.push({ id: `exif:${name}`, severity: "high", label: name, value: text });
-      continue;
-    }
-    if (MEDIUM_TAGS.has(name)) {
-      const text = fmtValue(f.value);
-      if (text) items.push({ id: `exif:${name}`, severity: "medium", label: name, value: text });
+    const severity = HIGH_TAGS.has(name) ? "high" : MEDIUM_TAGS.has(name) ? "medium" : null;
+    if (severity) {
+      const text = fmtValue(f.value) || (f.oversized ? "present, too large to decode" : "");
+      if (text) items.push({ id: `exif:${name}`, severity, label: name, value: text });
       continue;
     }
     settings++;

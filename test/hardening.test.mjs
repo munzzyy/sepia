@@ -46,8 +46,9 @@ test("oversized MakerNote-style field is counted, not silently dropped", async (
     }
   }
   const report = await inspectImage(structuralJpeg({ segments: [buildExifSegment(tiff)] }));
-  const other = report.items.find((i) => i.id === "exif:other");
-  assert.ok(other, "oversized field appears in the maker/unknown rollup");
+  const maker = report.items.find((i) => i.id === "exif:MakerNote");
+  assert.ok(maker, "oversized MakerNote surfaces under its own name, not the unknown rollup");
+  assert.notEqual(maker.severity, "low");
 });
 
 test("missing EOI does not hide an appended payload", async () => {

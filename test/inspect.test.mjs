@@ -13,6 +13,7 @@ import {
   FAKE_THUMB,
   SAMPLE_XMP,
   str,
+  identityGapSpec,
 } from "./fixtures.mjs";
 
 test("sniffs formats from magic bytes", () => {
@@ -94,6 +95,25 @@ test("negative control: clean files report nothing above low", async () => {
 test("negative control: the sample spec really is dirty before scrubbing", async () => {
   const report = await inspectImage(structuralJpeg({ segments: [buildExifSegment(buildTiff(sampleExifSpec()))] }));
   assert.ok(report.counts.high > 0);
+});
+
+test("GPSAreaInformation, GPSProcessingMethod, XPAuthor, and MakerNote all surface", async () => {
+  const report = await inspectImage(
+    structuralJpeg({ segments: [buildExifSegment(buildTiff(identityGapSpec()))] }),
+  );
+  const byId = Object.fromEntries(report.items.map((i) => [i.id, i]));
+  assert.equal(byId["exif:GPS area information"]?.value, "Paris, France");
+  assert.equal(byId["exif:GPS area information"]?.severity, "high");
+  assert.equal(byId["exif:GPS processing method"]?.value, "GPS NETWORK");
+  assert.equal(byId["exif:GPS processing method"]?.severity, "high");
+  assert.equal(byId["exif:Windows author"]?.value, "Jordan Sample");
+  assert.equal(byId["exif:Windows author"]?.severity, "high");
+  assert.ok(byId["exif:MakerNote"], "MakerNote has its own line, not folded into the low rollup");
+  assert.notEqual(byId["exif:MakerNote"]?.severity, "low");
+  // A genuinely unmapped tag still falls into the honest low rollup; that
+  // path must survive the fix, not just the named tags.
+  const other = report.items.find((i) => i.id === "exif:other");
+  assert.ok(other, "unmapped tag still counted, not dropped");
 });
 
 test("hostile input does not throw", async () => {
