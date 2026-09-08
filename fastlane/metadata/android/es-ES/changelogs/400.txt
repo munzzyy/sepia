@@ -1,0 +1,1 @@
+Correccion en la radiografia: los campos GPS de area/metodo de procesamiento, MakerNote y las etiquetas de autor/titulo de Windows podian pasar como limpios. Ahora se nombran y se marcan.

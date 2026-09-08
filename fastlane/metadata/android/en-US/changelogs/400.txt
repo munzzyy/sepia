@@ -1,0 +1,1 @@
+X-ray fix: GPS area/processing-method fields, MakerNote, and Windows author/title tags could slip past as clean. Now they are named and flagged.
