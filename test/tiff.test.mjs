@@ -11,6 +11,7 @@ import {
   structuralJpeg,
   buildExifSegment,
   FAKE_THUMB,
+  identityGapSpec,
 } from "./fixtures.mjs";
 
 test("parses the sample spec back out, both endianness paths bounds-checked", () => {
@@ -100,6 +101,45 @@ test("cross-check against exiftool on the same bytes", (t) => {
     assert.equal(meta.SerialNumber, "ZX44412906");
     assert.ok(Math.abs(meta.GPSLatitude - 48.8584) < 0.001);
     assert.ok(Math.abs(meta.GPSLongitude - 2.2945) < 0.001);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("names and decodes MakerNote, XPAuthor, and the free-text GPS tags", () => {
+  const parsed = parseTiff(buildTiff(identityGapSpec()));
+  const byName = Object.fromEntries(parsed.fields.filter((f) => f.name).map((f) => [f.name, f.value]));
+  assert.equal(byName["Windows author"], "Jordan Sample");
+  assert.equal(byName["GPS area information"], "Paris, France");
+  assert.equal(byName["GPS processing method"], "GPS NETWORK");
+  assert.ok(byName["MakerNote"], "MakerNote is named, not folded into the unknown gap");
+});
+
+test("cross-check the identity-gap fields against exiftool", (t) => {
+  let hasExiftool = true;
+  try {
+    execFileSync("exiftool", ["-ver"], { stdio: "pipe" });
+  } catch {
+    hasExiftool = false;
+  }
+  if (!hasExiftool) {
+    t.skip("exiftool not installed");
+    return;
+  }
+  const dir = mkdtempSync(path.join(tmpdir(), "sepia-tiff-gap-"));
+  try {
+    const jpeg = structuralJpeg({ segments: [buildExifSegment(buildTiff(identityGapSpec()))] });
+    const file = path.join(dir, "fixture.jpg");
+    writeFileSync(file, jpeg);
+    const out = execFileSync(
+      "exiftool",
+      ["-j", "-XPAuthor", "-GPSAreaInformation", "-GPSProcessingMethod", file],
+      { encoding: "utf8" },
+    );
+    const [meta] = JSON.parse(out);
+    assert.equal(meta.XPAuthor, "Jordan Sample");
+    assert.equal(meta.GPSAreaInformation, "Paris, France");
+    assert.equal(meta.GPSProcessingMethod, "GPS NETWORK");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

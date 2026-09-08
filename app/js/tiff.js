@@ -16,6 +16,12 @@ export const TAG_NAMES = {
   "0:0x013b": "Artist",
   "0:0x8298": "Copyright",
   "0:0xc4a5": "Print image matching",
+  "0:0x9c9b": "Windows title",
+  "0:0x9c9c": "Windows comment",
+  "0:0x9c9d": "Windows author",
+  "0:0x9c9e": "Windows keywords",
+  "0:0x9c9f": "Windows subject",
+  "exif:0x927c": "MakerNote",
   "exif:0x829a": "Exposure time",
   "exif:0x829d": "F number",
   "exif:0x8822": "Exposure program",
@@ -63,12 +69,35 @@ export const TAG_NAMES = {
   "gps:0x0010": "Image direction ref",
   "gps:0x0011": "Image direction",
   "gps:0x001b": "GPS processing method",
+  "gps:0x001c": "GPS area information",
   "gps:0x001d": "GPS date",
 };
 
 const TYPE_SIZES = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 6: 1, 7: 1, 8: 2, 9: 4, 10: 8 };
 const MAX_ENTRIES_PER_IFD = 256;
 const MAX_VALUE_COUNT = 4096;
+
+const CHARSET_PREFIXED_TAGS = new Set(["exif:0x9286", "gps:0x001b", "gps:0x001c"]);
+const XP_TAGS = new Set([0x9c9b, 0x9c9c, 0x9c9d, 0x9c9e, 0x9c9f]);
+
+// UserComment, GPSProcessingMethod, and GPSAreaInformation all lead with an
+// 8-byte charset id ahead of the text; show the text, not a byte dump.
+function decodeCharsetPrefixed(value) {
+  if (!Array.isArray(value) || value.length <= 8) return value;
+  const charset = String.fromCharCode(...value.slice(0, 5));
+  const body = value.slice(8).filter((b) => b !== 0);
+  if (charset === "ASCII" || charset === "UNICO" || value.slice(0, 8).every((b) => b === 0)) {
+    try {
+      return new TextDecoder(charset === "UNICO" ? "utf-16be" : "utf-8")
+        .decode(Uint8Array.from(value.slice(8)))
+        .replace(/\0+/g, "")
+        .trim();
+    } catch {
+      return `${body.length} bytes`;
+    }
+  }
+  return `${body.length} bytes`;
+}
 
 function readValue(bytes, type, count, off, le) {
   const size = TYPE_SIZES[type] * count;
@@ -144,23 +173,20 @@ function parseIfd(bytes, off, le, ifdName, out, visited) {
     const valOff = size <= 4 ? e + 8 : u32(bytes, e + 8, le);
     if (valOff === null) continue;
     let value = readValue(bytes, type, valCount, valOff, le);
-    // UserComment leads with an 8-byte charset id; show its text, not a
-    // byte dump.
-    if (tag === 0x9286 && type === 7 && Array.isArray(value) && value.length > 8) {
-      const charset = String.fromCharCode(...value.slice(0, 5));
-      const body = value.slice(8).filter((b) => b !== 0);
-      if (charset === "ASCII" || charset === "UNICO" || value.slice(0, 8).every((b) => b === 0)) {
-        try {
-          value = new TextDecoder(charset === "UNICO" ? "utf-16be" : "utf-8")
-            .decode(Uint8Array.from(value.slice(8)))
-            .replace(/\0+/g, "")
-            .trim();
-        } catch {
-          value = `${body.length} bytes`;
-        }
-      } else {
-        value = `${body.length} bytes`;
+    if (type === 7 && CHARSET_PREFIXED_TAGS.has(`${ifdName}:0x${tag.toString(16).padStart(4, "0")}`)) {
+      value = decodeCharsetPrefixed(value);
+    }
+    // Windows Explorer's XP* tags are UCS-2LE despite the BYTE type; left
+    // undecoded they render as mojibake instead of the name they carry.
+    if (ifdName === "0" && type === 1 && XP_TAGS.has(tag) && Array.isArray(value)) {
+      try {
+        value = new TextDecoder("utf-16le").decode(Uint8Array.from(value)).replace(/\0+$/, "");
+      } catch {
+        value = `${value.length} bytes`;
       }
+    }
+    if (tag === 0x927c && type === 7 && ifdName === "exif" && Array.isArray(value)) {
+      value = `${value.length} bytes of vendor data`;
     }
     if (tag === 0x8769 && ifdName === "0") {
       subExif = value;

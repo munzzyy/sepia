@@ -217,6 +217,42 @@ export function sampleExifSpec(thumbnail) {
   };
 }
 
+// UCS-2LE byte array for a Windows XP* tag (type BYTE), null-terminated.
+export function ucs2Bytes(s) {
+  const bytes = [];
+  for (const ch of s) {
+    const code = ch.charCodeAt(0);
+    bytes.push(code & 0xff, (code >> 8) & 0xff);
+  }
+  bytes.push(0, 0);
+  return bytes;
+}
+
+// UserComment / GPSProcessingMethod / GPSAreaInformation all share this
+// layout: an 8-byte charset code ahead of the text, type UNDEFINED.
+export function asciiCharsetBytes(text) {
+  return [0x41, 0x53, 0x43, 0x49, 0x49, 0, 0, 0].concat(Array.from(text, (c) => c.charCodeAt(0)));
+}
+
+// A spec of fields that name a person or a place but sat outside both the
+// GPS-block skip and TAG_NAMES: the regression fixture for that bug.
+// Cross-checked against exiftool: IFD0:XPAuthor, GPS:GPSAreaInformation,
+// GPS:GPSProcessingMethod, and an unrecognized MakerNote all decode as
+// intended before this repo's own parser ever sees the bytes.
+export function identityGapSpec() {
+  return {
+    ifd0: [{ tag: 0x9c9d, type: 1, values: ucs2Bytes("Jordan Sample") }],
+    exif: [
+      { tag: 0x927c, type: 7, values: Array.from({ length: 40 }, (_, i) => (i * 7) % 256) },
+      { tag: 0xc7b5, type: 2, values: "unmapped tag text" },
+    ],
+    gps: [
+      { tag: 0x001c, type: 7, values: asciiCharsetBytes("Paris, France") },
+      { tag: 0x001b, type: 7, values: asciiCharsetBytes("GPS NETWORK") },
+    ],
+  };
+}
+
 // ------------------------------------------------------------ JPEG fixtures
 
 export function buildExifSegment(tiffBytes) {
