@@ -1,6 +1,6 @@
 {
   "name": "sepia",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Share images without oversharing. On-device metadata X-ray, real redaction, and proof the output is clean.",
   "type": "module",
   "private": true,

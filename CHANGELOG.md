@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.0
+
+Two things the X-ray missed.
+
+- GPS free-text fields, GPS area information and GPS processing method, were
+  skipped before the report ever decided what to name, so they never showed
+  up no matter what they held. Anything else the tag table didn't recognize,
+  MakerNote, Windows Explorer's XP author and title fields, fell into one
+  quiet low-severity line instead of being called out by name, which meant a
+  file carrying your actual name in one of those fields could still come
+  back clean. An earlier pass already counted oversized MakerNotes as
+  truncated bytes, but that bucket never named them, so the clean verdict
+  held anyway. All of it is named and severity-checked now, cross-checked
+  against exiftool.
+
 ## 0.3.0
 
 The batch round.
