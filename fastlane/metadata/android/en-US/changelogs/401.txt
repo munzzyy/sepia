@@ -1,0 +1,1 @@
+Fix: the choose-image button opened no picker at all, so nothing could be loaded to scrub. It opens now, filtered to images.
