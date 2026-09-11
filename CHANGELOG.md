@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.1
+
+The picker opens now.
+
+- Choosing an image to scrub did nothing: the button opened no file picker
+  at all. The WebView had never been handed a file-chooser, so the image
+  input was dead. It opens now, filtered to images, and the photo loads
+  straight into the editor.
+
 ## 0.4.0
 
 Two things the X-ray missed.
