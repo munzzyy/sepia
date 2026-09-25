@@ -1,6 +1,6 @@
 # Sepia
 
-[![release](https://img.shields.io/github/v/release/munzzyy/sepia)](https://github.com/munzzyy/sepia/releases/latest) [![ci](https://github.com/munzzyy/sepia/actions/workflows/ci.yml/badge.svg)](https://github.com/munzzyy/sepia/actions/workflows/ci.yml) [![license: MIT](https://img.shields.io/badge/license-MIT-8a4b1f)](LICENSE)
+[![release](https://img.shields.io/github/v/release/munzzyy/sepia)](https://github.com/munzzyy/sepia/releases/latest) [![ci](https://github.com/munzzyy/sepia/actions/workflows/ci.yml/badge.svg)](https://github.com/munzzyy/sepia/actions/workflows/ci.yml) [![license: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-8a4b1f)](LICENSE)
 
 Share images without oversharing.
 
@@ -140,4 +140,8 @@ a partial translation gets caught before it ships, not after. No hosted
 translation platform exists yet; a pull request against the catalog file
 is the whole flow today.
 
-MIT.
+## License
+
+[GPL-3.0-or-later](LICENSE). You can use, study, change and share it. If you
+distribute a copy or a modified version, it has to stay under the GPL and
+come with its source. Releases up to v0.4.1 were under MIT.

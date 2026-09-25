@@ -64,8 +64,8 @@ export const es = {
   "Not yet. The first version strips everything; a keep-my-credit option is on the list.":
     "Todavía no. La primera versión quita todo; una opción de conservar tu crédito está en la lista.",
   "Is this open source?": "¿Es de código abierto?",
-  "Yes, MIT licensed. The whole app is readable JavaScript with no dependencies.":
-    "Sí, con licencia MIT. Toda la app es JavaScript legible y sin dependencias.",
+  "Yes, GPL licensed. The whole app is readable JavaScript with no dependencies.":
+    "Sí, con licencia GPL. Toda la app es JavaScript legible y sin dependencias.",
   "Privacy": "Privacidad",
   "About Sepia": "Acerca de Sepia",
 

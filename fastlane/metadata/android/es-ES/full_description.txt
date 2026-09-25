@@ -14,4 +14,4 @@ Todo ocurre en tu dispositivo. Esta app no tiene el permiso de INTERNET: el
 sistema operativo no la deja abrir conexiones, y puedes comprobarlo en el
 manifiesto en lugar de confiar en una promesa.
 
-Sin cuentas, sin analiticas, sin dependencias. Licencia MIT.
+Sin cuentas, sin analiticas, sin dependencias. Licencia GPL.

@@ -92,7 +92,7 @@ Three things. Your browser or WebView's image decoder and canvas encoder,
 which already handle every image you look at, so that trust is not new.
 Sepia's own code, which is a few thousand lines of dependency-free
 JavaScript plus a thin Kotlin shell (and, on iOS, an equally thin Swift
-one), MIT licensed, honestly readable in an afternoon. And the site serving
+one), GPL licensed, honestly readable in an afternoon. And the site serving
 you the web app, or the APK signature once you've installed it.
 
 The iOS wrapper earns the "nowhere" claim above one layer higher than

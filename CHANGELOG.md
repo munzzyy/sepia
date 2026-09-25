@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Relicensed to GPL-3.0-or-later. Releases up to v0.4.1 stay under MIT.
+
 ## 0.4.1
 
 The picker opens now.

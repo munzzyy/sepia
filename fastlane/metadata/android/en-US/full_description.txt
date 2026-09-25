@@ -15,4 +15,4 @@ Everything happens on your device. This app has no INTERNET permission: the
 operating system will not let it open a connection, and you can check the
 manifest instead of trusting a promise.
 
-No accounts, no analytics, no dependencies. MIT licensed.
+No accounts, no analytics, no dependencies. GPL licensed.
