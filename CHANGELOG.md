@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Relicensed to GPL-3.0-or-later. Releases up to v0.4.1 stay under MIT.
+- Added a "Made by Munzzyy" credit next to the in-app About link, plus
+  FUNDING.yml and an F-Droid author link.
 
 ## 0.4.1
 
