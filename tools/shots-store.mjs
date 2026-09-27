@@ -1,6 +1,6 @@
-// Captures phone-ratio store screenshots (390x844, wrapper mode) into the
-// fastlane listing: start screen, editor with the X-ray open on the demo
-// image, and the proof screen.
+// Captures phone-ratio store screenshots (390x844 at 2x, wrapper mode, dark
+// theme) into the fastlane listing: start screen, editor with the X-ray open
+// on the demo image, and the proof screen.
 //
 // Run from the repo root:  node tools/shots-store.mjs
 
@@ -86,11 +86,23 @@ async function main() {
     await c.send("Page.enable");
     await c.send("Runtime.enable");
     await c.send("Page.addScriptToEvaluateOnNewDocument", { source: BRIDGE_STUB });
+    await c.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "dark" }] });
     await c.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
     await c.send("Page.navigate", { url: BASE + "/" });
     await waitFor(() => c.evalJs("!!window.__sepiaApi && __sepiaApi.state.screen === 'start'"), "start");
 
+    // A toast, sideways scroll, or page error fails the run instead of shipping.
     const shot = async (name) => {
+      await waitFor(() => c.evalJs("!document.getElementById('toast').classList.contains('show')"), "toast gone");
+      await sleep(400);
+      const bad = await c.evalJs(`(() => {
+        const out = [];
+        if (document.documentElement.scrollWidth > document.documentElement.clientWidth) out.push("horizontal scroll");
+        if (getComputedStyle(document.getElementById('toast')).visibility !== 'hidden') out.push("toast visible");
+        if (__sepiaErrors.length) out.push("errors: " + __sepiaErrors.join("; "));
+        return out;
+      })()`);
+      if (bad.length) throw new Error(`${name}: ${bad.join(", ")}`);
       const s = await c.send("Page.captureScreenshot", { format: "png" });
       writeFileSync(path.join(OUT, name), Buffer.from(s.result.data, "base64"));
       console.log(`wrote ${name}`);
