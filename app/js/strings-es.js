@@ -301,4 +301,5 @@ export const es = {
   "Could not read this file's structure.": "No se pudo leer la estructura de este archivo.",
   "Could not open this image.": "No se pudo abrir esta imagen.",
   "Could not encode this image.": "No se pudo codificar esta imagen.",
+  "Made by": "Hecho por",
 };
