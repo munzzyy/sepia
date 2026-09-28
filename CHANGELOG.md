@@ -1,10 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.4.2
 
+Sepia says who made it.
+
+- A "Made by Munzzyy" credit sits next to the About link, in the app and on
+  the web, linking to the author's GitHub.
 - Relicensed to GPL-3.0-or-later. Releases up to v0.4.1 stay under MIT.
-- Added a "Made by Munzzyy" credit next to the in-app About link, plus
-  FUNDING.yml and an F-Droid author link.
+- The F-Droid listing gets an author link, a Donate link, and screenshots
+  that no longer have a toast covering the results.
 
 ## 0.4.1
 

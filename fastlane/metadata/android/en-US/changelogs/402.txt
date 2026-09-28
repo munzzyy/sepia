@@ -1,0 +1,1 @@
+Sepia now says who made it, next to the About link. Sepia is now GPL-3.0-or-later.
