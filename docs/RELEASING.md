@@ -30,7 +30,7 @@ Signs with apksigner from build-tools 34.0.0 (the version F-Droid's
 apksigcopier can verify) using `~/keys/sepia-upload.jks`; the password
 lives in the system keyring under `service sepia-keystore key upload`.
 Artifacts land in `dist/` with sha256 sums printed, including the
-stable-name `sepia.apk` used by the landing page and Obtainium.
+stable-name `sepia.apk` used by the landing page and Tern.
 
 ## 4. Tag and publish
 

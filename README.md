@@ -46,8 +46,10 @@ will warn you about installing from outside it; that's expected for any APK
 that isn't store-distributed, not a sign anything is wrong here, and the
 "Check the claims" section below is exactly how you check for yourself. The
 download link always points at the current release, which is also what
-[Obtainium](https://github.com/ImranR98/Obtainium) (an app that watches
-GitHub releases and updates sideloaded apps for you) wants to track.
+[Tern](https://github.com/munzzyy/tern) (an app that watches GitHub releases and updates sideloaded apps
+for you) tracks.
+
+[<img src="https://munzzyy.github.io/tern/badge.png" alt="Get it with Tern" height="80">](https://munzzyy.github.io/tern/add/?url=https%3A%2F%2Fgithub.com%2Fmunzzyy%2Fsepia)
 
 **Web:** there is no hosted copy yet, so "on the web" means running it
 yourself for now: `app/` is the whole app, no build step, no server side.

@@ -57,7 +57,7 @@ jarsigner -verify "$AAB_OUT" >/dev/null && echo "aab signature verifies"
 
 unset KSPW
 
-# Stable-name copy so the landing page and Obtainium can point at
+# Stable-name copy so the landing page and Tern can point at
 # releases/latest/download/sepia.apk across versions.
 cp "$APK_OUT" dist/sepia.apk
 
