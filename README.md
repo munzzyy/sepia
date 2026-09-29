@@ -140,6 +140,14 @@ a partial translation gets caught before it ships, not after. No hosted
 translation platform exists yet; a pull request against the catalog file
 is the whole flow today.
 
+## Support
+
+If you want to help keep Sepia going, you can sponsor on [GitHub Sponsors](https://github.com/sponsors/munzzyy) or send Monero to:
+
+```
+8AHCWFiXhAobJdEUYgPh9y6ZgAttnk4YRGMUrpuiNbSLMG8Hmoy2Z76JPeCkJEBcudFVfX6UHa69JYLxBVfAwsjmFoUo1Rr
+```
+
 ## License
 
 [GPL-3.0-or-later](LICENSE). You can use, study, change and share it. If you
