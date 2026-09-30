@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.4.3
+
+Sepia stays clear of the status bar and the camera cutout.
 
 - On Android 15 and later the app no longer draws under the status bar, the
   camera cutout or the navigation bar. It showed on a Pixel Fold's outer
