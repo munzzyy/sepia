@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- On Android 15 and later the app no longer draws under the status bar, the
+  camera cutout or the navigation bar. It showed on a Pixel Fold's outer
+  screen (#6).
+
 ## 0.4.2
 
 Sepia says who made it.
