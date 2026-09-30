@@ -49,18 +49,20 @@ download link always points at the current release, which is also what
 [Tern](https://github.com/munzzyy/tern) (an app that watches GitHub releases and updates sideloaded apps
 for you) tracks.
 
-[<img src="https://munzzyy.github.io/tern/badge.png" alt="Get it with Tern" height="80">](https://munzzyy.github.io/tern/add/?url=https%3A%2F%2Fgithub.com%2Fmunzzyy%2Fsepia)
+[<img src="https://tern.munzzyy.dev/badge.png" alt="Get it with Tern" height="80">](https://tern.munzzyy.dev/add/?url=https%3A%2F%2Fgithub.com%2Fmunzzyy%2Fsepia)
 
-**Web:** there is no hosted copy yet, so "on the web" means running it
-yourself for now: `app/` is the whole app, no build step, no server side.
-`node test/serve_local.mjs` serves it locally, or point any static file
-host at the folder.
+**Web:** open [sepia.munzzyy.dev](https://sepia.munzzyy.dev). It is this
+repo's `app/` folder served as plain files with the headers in
+`app/_headers`, and after the first load it works offline. `app/` is the
+whole app, no build step, no server side, so you can also run your own
+copy: `node test/serve_local.mjs` serves it locally, or point any static
+file host at the folder.
 
-**iPhone:** support is coming; today you'd need a Mac to build it yourself.
-There is a native wrapper in `ios/` you can build with Xcode, and once a
-hosted copy of `app/` exists, Safari's "Add to Home Screen" will work too.
-What the wrapper does and does not match from the Android app, and how to
-build it, is spelled out in [docs/IOS.md](docs/IOS.md).
+**iPhone:** open [sepia.munzzyy.dev](https://sepia.munzzyy.dev) in Safari,
+tap Share, then "Add to Home Screen". There is also a native wrapper in
+`ios/` you can build with Xcode on a Mac. What the wrapper does and does
+not match from the Android app, and how to build it, is spelled out in
+[docs/IOS.md](docs/IOS.md).
 
 ## How it works
 

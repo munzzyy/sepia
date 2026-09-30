@@ -107,9 +107,9 @@ Nothing here runs in CI. Before calling a build good:
 ## The no-install alternative
 
 Safari on iOS can install a hosted copy of `app/` directly: open the site,
-tap Share, then "Add to Home Screen". That needs an https origin serving
-`app/` at the domain root; see the main [README](../README.md#get-it) for
-where that stands today. The wrapper exists for people who prefer a real
+tap Share, then "Add to Home Screen". The hosted copy is
+[sepia.munzzyy.dev](https://sepia.munzzyy.dev), this repo's `app/` served at
+the domain root. The wrapper exists for people who prefer a real
 app binary whose contents are pinned by a release they can verify.
 
 ## One rule for maintainers
