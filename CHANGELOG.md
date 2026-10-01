@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.5.0
+
+Sepia runs on Android 9.
 
 - Sepia installs on Android 9 now. Saving there goes through the system
   save picker, because Android 9 has no way to add a photo to the gallery
