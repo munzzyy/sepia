@@ -1,8 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
-  <g transform="translate(30,30) scale(0.5)">
-    <rect x="18" y="14" width="60" height="68" rx="8" fill="#f4ead8"/>
-    <circle cx="36" cy="32" r="7" fill="#d98d4a"/>
-    <path d="M24 62 40 44l12 13 8-9 12 14v14a8 8 0 0 1-8 8H32a8 8 0 0 1-8-8z" fill="#c9a26b"/>
-    <rect x="26" y="46" width="44" height="12" rx="3" fill="#0e0c0a"/>
+  <g transform="translate(19.4,19.4) scale(0.72)">
+    <g>
+      <circle cx="33" cy="33" r="8" fill="#f2b366"/>
+      <path d="M16 74 L38 45 L49 59 L56 51 L56 74 Z" fill="#f4ead8"/>
+      <g fill="#f4ead8">
+        <rect x="57" y="46" width="6" height="6" opacity=".95"/><rect x="57" y="53" width="6" height="6" opacity=".95"/><rect x="57" y="60" width="6" height="6" opacity=".95"/><rect x="57" y="67" width="6" height="6" opacity=".95"/>
+        <rect x="64" y="40" width="6" height="6" opacity=".7"/><rect x="64" y="47" width="6" height="6" opacity=".7"/><rect x="64" y="61" width="6" height="6" opacity=".7"/><rect x="64" y="68" width="6" height="6" opacity=".7"/>
+        <rect x="71" y="52" width="6" height="6" opacity=".4"/><rect x="71" y="66" width="6" height="6" opacity=".4"/>
+        <rect x="78" y="62" width="5" height="5" opacity=".22"/>
+      </g>
+    </g>
   </g>
 </svg>
