@@ -4,6 +4,7 @@
 // rather than shipping a heavyweight vendored decoder.
 
 export function codesSupported() {
+  if (globalThis.SepiaNative?.codesSafe && !globalThis.SepiaNative.codesSafe()) return false;
   return typeof globalThis.BarcodeDetector === "function";
 }
 

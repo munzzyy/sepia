@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- Sepia installs on Android 9 now. Saving there goes through the system
+  save picker, because Android 9 has no way to add a photo to the gallery
+  without a storage permission. The first time it opens on Android 9, Sepia
+  says once that Android 9 has had no security fixes since January 2022.
+- With an Android System WebView older than 108, the app says which version
+  it needs instead of opening to a blank page.
+- Opening an image no longer crashes the app on Google's AOSP WebView build
+  (emulator images and some AOSP-based phones). That build crashes whenever
+  a page looks for QR codes, so code finding is off there.
+
 ## 0.4.3
 
 Sepia stays clear of the status bar and the camera cutout.

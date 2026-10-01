@@ -14,11 +14,23 @@ synced into assets at build time, so the APK and the website cannot drift.
 - **Share out:** the scrubbed bytes go to a scoped cache directory exposed
   by a FileProvider, then to the system share sheet. The directory is
   emptied on the next share.
-- **Save:** MediaStore insert into `Pictures/Sepia`. No storage permission
-  is needed for app-created images on minSdk 29.
+- **Save:** MediaStore insert into `Pictures/` on Android 10 and later,
+  which needs no storage permission for app-created images. Android 9 has
+  no permission-free way in, so there the save goes through the system
+  save picker instead.
 - **Secure screen:** FLAG_SECURE, because the canvas holds the unredacted
   original and the app switcher thumbnails whatever was on screen.
 - **Font scale:** the system font size reaches the page through textZoom.
+
+The page needs Android System WebView 108 or newer, because its layout uses
+dvh units. Below that, the wrapper shows a plain native screen with the
+version it needs and the one the phone has, instead of a blank page. On
+Android 9 the first launch also shows a one-time note that Android 9 has had
+no security fixes since January 2022.
+
+Google's AOSP WebView build, the one on emulator images, kills the app when
+the page creates a `BarcodeDetector`. The bridge's `codesSafe()` turns code
+finding off there, and the page treats it like a browser without the API.
 
 ## What the wrapper deliberately lacks
 

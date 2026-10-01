@@ -2,9 +2,11 @@ package io.github.munzzyy.sepia
 
 import android.content.ContentValues
 import android.content.Intent
+import android.os.Build
 import android.provider.MediaStore
 import android.util.Base64
 import android.webkit.JavascriptInterface
+import android.webkit.WebView
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import java.io.File
@@ -24,6 +26,10 @@ class SepiaBridge(private val activity: MainActivity) {
 
     @JavascriptInterface
     fun sharedImageTokens(): String = activity.sharedTokensJson()
+
+    // Google's AOSP WebView build (emulators, some AOSP ROMs) kills the app when a page makes a BarcodeDetector.
+    @JavascriptInterface
+    fun codesSafe(): Boolean = WebView.getCurrentWebViewPackage()?.packageName != "com.android.webview"
 
     // Scrubbed bytes to the system share sheet. The file lands in a scoped
     // cache directory only the FileProvider exposes, named by the scrubbed
@@ -57,11 +63,15 @@ class SepiaBridge(private val activity: MainActivity) {
         }
     }
 
-    // Scrubbed bytes into the gallery under Pictures/Sepia. MediaStore
-    // needs no permission for app-created images on this minSdk.
+    // Scrubbed bytes into the gallery under Pictures/. MediaStore needs no
+    // permission for app-created images from Android 10 on.
     @JavascriptInterface
     fun saveImage(b64: String, mime: String, name: String) {
         val bytes = runCatching { Base64.decode(b64, Base64.DEFAULT) }.getOrNull() ?: return
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            activity.runOnUiThread { activity.saveWithPicker(bytes, mime, sanitize(name)) }
+            return
+        }
         // Plain Pictures/: a gallery album literally named after a scrubbing
         // tool would advertise exactly which photos were sanitized.
         val values = ContentValues().apply {

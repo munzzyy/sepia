@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Sepia</string>
+    <string name="app_name" translatable="false">Sepia</string>
     <string name="saved_to_photos">Saved to Pictures</string>
     <string name="save_failed">Could not save the image</string>
+    <string name="webview_title">Update Android System WebView</string>
+    <string name="webview_too_old">Sepia runs inside Android System WebView and needs version %1$d or newer. This phone has version %2$d.\n\nUpdate Android System WebView (on some phones it comes with Chrome) from your app store, or install your phone\'s latest system update, then open Sepia again.</string>
+    <string name="webview_missing">Sepia runs inside Android System WebView, and this phone doesn\'t have a working one. It may be turned off in your phone\'s app settings, or it may need an update from your app store.</string>
+    <string name="android9_title">This phone runs Android 9</string>
+    <string name="android9_body">Sepia works on Android 9, but Google stopped fixing security holes in Android 9 after January 2022. Anything found since then is still open on this phone, and a harmful app or website could use it to reach your photos.\n\nIf you can, keep private photos on a newer phone.</string>
+    <string name="saved">Saved</string>
 </resources>

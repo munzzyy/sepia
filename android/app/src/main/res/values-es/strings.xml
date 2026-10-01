@@ -2,4 +2,10 @@
 <resources>
     <string name="saved_to_photos">Guardado en Pictures</string>
     <string name="save_failed">No se pudo guardar la imagen</string>
+    <string name="webview_title">Actualiza Android System WebView</string>
+    <string name="webview_too_old">Sepia funciona dentro de Android System WebView y necesita la versión %1$d o posterior. Este teléfono tiene la versión %2$d.\n\nActualiza Android System WebView (en algunos teléfonos viene con Chrome) desde tu tienda de aplicaciones o instala la última actualización del sistema, y vuelve a abrir Sepia.</string>
+    <string name="webview_missing">Sepia funciona dentro de Android System WebView y este teléfono no tiene uno que funcione. Puede estar desactivado en los ajustes de aplicaciones del teléfono o necesitar una actualización desde tu tienda de aplicaciones.</string>
+    <string name="android9_title">Este teléfono usa Android 9</string>
+    <string name="android9_body">Sepia funciona en Android 9, pero Google dejó de corregir fallos de seguridad de Android 9 después de enero de 2022. Lo que se ha descubierto desde entonces sigue abierto en este teléfono, y una app o un sitio web malicioso podría aprovecharlo para llegar a tus fotos.\n\nSi puedes, guarda las fotos privadas en un teléfono más nuevo.</string>
+    <string name="saved">Guardado</string>
 </resources>

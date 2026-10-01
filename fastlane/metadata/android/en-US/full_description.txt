@@ -15,4 +15,8 @@ Everything happens on your device. This app has no INTERNET permission: the
 operating system will not let it open a connection, and you can check the
 manifest instead of trusting a promise.
 
+Runs on Android 9 and newer, with Android System WebView 108 or newer.
+Android 9 has had no security fixes since January 2022, so on a phone that
+old Sepia works, but the phone itself is easier to break into.
+
 No accounts, no analytics, no dependencies. GPL licensed.

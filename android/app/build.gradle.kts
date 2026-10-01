@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "io.github.munzzyy.sepia"
-        minSdk = 29
+        minSdk = 28
         targetSdk = 36
         versionCode = 403
         versionName = "0.4.3"

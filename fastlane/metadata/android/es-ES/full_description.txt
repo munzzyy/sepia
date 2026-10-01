@@ -14,4 +14,9 @@ Todo ocurre en tu dispositivo. Esta app no tiene el permiso de INTERNET: el
 sistema operativo no la deja abrir conexiones, y puedes comprobarlo en el
 manifiesto en lugar de confiar en una promesa.
 
+Funciona en Android 9 o posterior, con Android System WebView 108 o
+posterior. Android 9 no recibe correcciones de seguridad desde enero de 2022,
+asi que en un telefono tan antiguo Sepia funciona, pero el telefono es mas
+facil de atacar.
+
 Sin cuentas, sin analiticas, sin dependencias. Licencia GPL.

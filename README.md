@@ -41,13 +41,20 @@ privacy policy; the manifest is right there to read.
 ## Get it
 
 **Android:** grab [sepia.apk](https://github.com/munzzyy/sepia/releases/latest/download/sepia.apk)
-and install it (Android 10 or newer). It's not on the Play Store, so Android
+and install it (Android 9 or newer). It's not on the Play Store, so Android
 will warn you about installing from outside it; that's expected for any APK
 that isn't store-distributed, not a sign anything is wrong here, and the
 "Check the claims" section below is exactly how you check for yourself. The
 download link always points at the current release, which is also what
 [Tern](https://github.com/munzzyy/tern) (an app that watches GitHub releases and updates sideloaded apps
 for you) tracks.
+
+Android 9 works, with two catches. Google's last security fixes for Android 9
+came out in January 2022, so a phone that old is easier to break into, and
+Sepia says so once, the first time it opens there. Sepia also runs inside
+Android System WebView and needs version 108 or newer. A phone that gets
+updates through Google Play should already have it; with an older WebView,
+Sepia explains how to update it instead of opening to a blank screen.
 
 [<img src="https://tern.munzzyy.dev/badge.png" alt="Get it with Tern" height="80">](https://tern.munzzyy.dev/add/?url=https%3A%2F%2Fgithub.com%2Fmunzzyy%2Fsepia)
 

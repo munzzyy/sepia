@@ -3,4 +3,5 @@
     <color name="sepia_paper">#f4ead8</color>
     <color name="sepia_dark">#181410</color>
     <color name="sepia_brown">#8a4b1f</color>
+    <color name="check_text">@color/sepia_dark</color>
 </resources>
