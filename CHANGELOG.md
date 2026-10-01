@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1
+
+A new icon.
+
+- Sepia's paper card was hard to tell from Magpie's and Blot's on a home
+  screen. The icon is now a sun over a hill, with the right side of the
+  picture breaking up into pixels.
+
 ## 0.5.0
 
 Sepia runs on Android 9.
