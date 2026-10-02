@@ -46,7 +46,7 @@ will warn you about installing from outside it; that's expected for any APK
 that isn't store-distributed, not a sign anything is wrong here, and the
 "Check the claims" section below is exactly how you check for yourself. The
 download link always points at the current release, which is also what
-[Tern](https://github.com/munzzyy/tern) (an app that watches GitHub releases and updates sideloaded apps
+[Tern](https://tern.munzzyy.dev) (an app that watches GitHub releases and updates sideloaded apps
 for you) tracks.
 
 Android 9 works, with two catches. Google's last security fixes for Android 9
@@ -133,6 +133,30 @@ npm test              # unit tests (node >= 24)
 npm run e2e           # chromium and firefox end-to-end suites
 npm run fixtures      # regenerate demo + test images
 ```
+
+## Roadmap
+
+What is left needs more than the code in this repo: a release, a real
+phone, or a native speaker.
+
+- A release with everything under Unreleased in [CHANGELOG.md](CHANGELOG.md).
+  Until it is cut, the APK and the F-Droid build are 0.5.1 and have none of
+  those fixes.
+- The signing certificate digest in the release notes for v0.4.0 through
+  v0.5.1. Those releases only show the sha256 GitHub lists for each file.
+  Every APK released so far is signed by the same certificate, SHA-256
+  `ad9d5b2504baf0fc2e888f6bd08cd7a63a5342071b6d358b7d64d6a75d503a44`.
+- TalkBack and VoiceOver on real phones over the new box buttons. The tests
+  press them with pointer clicks in Chromium. Whether a screen reader user
+  can actually put a box over a face takes a person with a phone.
+- The iPhone wrapper on a device. Save all has not been tried there and may
+  hand over only the first file, sharing into Sepia from Photos is not built,
+  and nobody has run the proof on the PNG and JPEG files Safari writes. It
+  all needs a Mac and an iPhone; [docs/IOS.md](docs/IOS.md) has the
+  checklist.
+- A read by a native speaker of the Spanish in the app, the Android strings
+  and the F-Droid listing. The Spanish listing also has no changelogs after
+  0.4.0.
 
 ## Bugs, holes, contributions
 

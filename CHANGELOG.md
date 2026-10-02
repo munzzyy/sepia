@@ -1,5 +1,34 @@
 # Changelog
 
+## Unreleased
+
+Fixes to the proof, the X-ray and the Android app.
+
+- PNG exports in Firefox always ended on "Something survived". Firefox adds
+  a small deBG chunk to PNGs a page encodes, holding a value tied to the
+  browser profile. Sepia now drops chunks like that from its PNG output
+  before the check, so the saved file is the one that was checked.
+- Picking several images in the Android app's picker opened nothing. They
+  all land in the batch screen now.
+- On Android 9, Save all wrote one file and left the rest empty. Each file
+  gets its own save picker now, one after another.
+- The X-ray names more fields that point at a person or a place: the Exif
+  photographer, image editor and title fields, the computer an image was
+  made on, document and page names, and GPS destination coordinates. An
+  unnamed field holding text, or any unnamed GPS field, gets its own line
+  instead of a quiet count.
+- Broken or fake Exif, color profile and marker blocks in an original no
+  longer read as clean.
+- The X-ray and the proof screen are fully in Spanish, values included.
+- Transparent WebP images stay transparent: they export as PNG instead of
+  JPEG with a black background.
+- Add box in the toolbar puts a cover box on the image, and buttons under
+  the image move it, resize it and remove it. Covering something no longer
+  needs a drag or a keyboard.
+- The web app works offline from a subpath like example.com/sepia/ too.
+- Release notes carry the APK's sha256 and the signing certificate digest
+  again.
+
 ## 0.5.1
 
 A new icon.
