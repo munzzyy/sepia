@@ -418,7 +418,6 @@ export function createCanvasView(host) {
 
   const keyStep = () => Math.max(2, Math.round(8 / view.scale));
 
-  // The arrow keys and the on-screen box buttons both land here.
   function nudgeSelected(dx, dy, resize) {
     if (!selected) return false;
     const editor = host.getEditor();

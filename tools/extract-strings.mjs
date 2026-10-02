@@ -50,8 +50,7 @@ for (const file of readdirSync(jsDir)) {
   }
 }
 
-// X-ray labels, details and computed values are built in inspect.js and translated at
-// render time, so they come from the item literals and the tag tables, not a hand-kept list.
+// X-ray strings are translated at render time, so they come from inspect.js literals and the tag tables.
 const xraySrc = readFileSync(path.join(jsDir, "inspect.js"), "utf8");
 for (const m of xraySrc.matchAll(/\b(?:label|labelT|detail):\s*"((?:[^"\\]|\\.)*)"/g)) strings.add(norm(m[1]));
 for (const m of xraySrc.matchAll(/\btv\(\s*"((?:[^"\\]|\\.)*)"/g)) strings.add(norm(m[1]));

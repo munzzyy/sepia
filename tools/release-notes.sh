@@ -1,6 +1,5 @@
 #!/bin/bash
-# Release notes for one version: its CHANGELOG section, the APK's sha256 and the signing cert digest.
-# Usage: bash tools/release-notes.sh 0.5.1   (reads dist/ only, needs no keystore)
+# Usage: bash tools/release-notes.sh 0.5.1   (CHANGELOG section, APK sha256 and cert digest, from dist/ only)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

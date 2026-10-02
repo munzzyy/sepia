@@ -323,11 +323,12 @@ test("2000 seeded single-byte flips and truncations never throw", async () => {
   const dir = new URL("fixtures/", import.meta.url);
   const files = readdirSync(dir)
     .filter((f) => /\.(jpe?g|png|webp)$/.test(f))
+    .sort()
     .map((f) => new Uint8Array(readFileSync(new URL(f, dir))));
   assert.ok(files.length >= 4);
   const t0 = Date.now();
   for (let i = 0; i < 2000; i++) {
-    const src = files[i % files.length];
+    const src = files[Math.floor(i / 4) % files.length];
     const pos = Math.floor(rand() * src.length);
     const bytes = i % 4 === 3 ? src.slice(0, pos) : Uint8Array.from(src);
     if (i % 4 !== 3) bytes[pos] = Math.floor(rand() * 256);

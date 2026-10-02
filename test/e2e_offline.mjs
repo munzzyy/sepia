@@ -58,9 +58,16 @@ function connect(wsUrl) {
     }
   };
   const send = (method, params = {}) =>
-    new Promise((resolve) => {
+    new Promise((resolve, reject) => {
       const myId = ++id;
-      pending.set(myId, resolve);
+      const timer = setTimeout(() => {
+        pending.delete(myId);
+        reject(new Error(`no answer to ${method} in 15 s`));
+      }, 15000);
+      pending.set(myId, (msg) => {
+        clearTimeout(timer);
+        resolve(msg);
+      });
       ws.send(JSON.stringify({ id: myId, method, params }));
     });
   const evalJs = async (expression) => {
@@ -88,8 +95,11 @@ async function newTab(cdpPort) {
   return c;
 }
 
+const servers = new Set();
 function serve(port, mount) {
-  return spawn("node", [path.join(ROOT, "test", "serve_local.mjs"), String(port), mount], { stdio: "ignore" });
+  const server = spawn("node", [path.join(ROOT, "test", "serve_local.mjs"), String(port), mount], { stdio: "ignore" });
+  servers.add(server);
+  return server;
 }
 
 async function run(cdpPort, mount) {
@@ -166,16 +176,27 @@ async function main() {
     ["--headless=new", `--remote-debugging-port=${cdpPort}`, "--user-data-dir=" + profile, "--no-sandbox", "--disable-gpu", "about:blank"],
     { stdio: "ignore" },
   );
+  const exited = new Promise((resolve) => chromium.once("exit", resolve));
+  const cleanUp = async () => {
+    for (const server of servers) server.kill();
+    chromium.kill();
+    if (!(await Promise.race([exited.then(() => true), sleep(5000, false)]))) chromium.kill("SIGKILL");
+    await exited;
+    try {
+      rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    } catch (err) {
+      console.log(`  could not remove ${profile}: ${err.message}`);
+    }
+  };
+  let stopping = null;
+  // timeout(1) signals the child and then its whole group, so a second signal must not kill the cleanup.
+  for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => (stopping ??= cleanUp().finally(() => process.exit(1))));
   try {
     await waitFor(() => fetch(`http://127.0.0.1:${cdpPort}/json/version`).then((r) => r.ok).catch(() => false), "devtools up");
     await run(cdpPort, "/");
     await run(cdpPort, "/sepia/");
   } finally {
-    chromium.kill();
-    await sleep(400);
-    try {
-      rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
-    } catch {}
+    await cleanUp();
   }
   if (fails.length) {
     console.log("FAILS:", fails.join("; "));

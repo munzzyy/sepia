@@ -51,8 +51,7 @@ grep -q "VERSION = \"$ver\"" app/js/main.js || { echo "app/js/main.js VERSION !=
 grep -q "VERSION = \"sepia-v$ver\"" app/sw.js || { echo "app/sw.js VERSION != sepia-v$ver"; bad=1; }
 grep -q "versionName = \"$ver\"" android/app/build.gradle.kts || { echo "gradle versionName != $ver"; bad=1; }
 grep -q "^## $ver" CHANGELOG.md || { echo "CHANGELOG.md missing ## $ver"; bad=1; }
-# versionCode is major*10000 + minor*100 + patch, and F-Droid shows the
-# fastlane changelog named after it; neither shows up wrong until F-Droid.
+# F-Droid shows the fastlane changelog named after versionCode, so a wrong one only surfaces there.
 IFS=. read -r major minor patch <<< "$ver"
 code=$((major * 10000 + minor * 100 + patch))
 grep -q "versionCode = $code$" android/app/build.gradle.kts || { echo "gradle versionCode != $code"; bad=1; }
