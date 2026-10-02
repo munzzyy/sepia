@@ -27,7 +27,9 @@ function classify(marker, bytes, payloadOff) {
     return "app";
   }
   if (marker === 0xfe) return "comment";
-  return "other";
+  // C8, F0-FD and 02-BF are reserved or unassigned: data riding along, not image structure.
+  const structural = (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc8) || (marker >= 0xda && marker <= 0xdf);
+  return structural ? "other" : "app";
 }
 
 // After an SOS the stream is entropy-coded: 0xFF is either stuffed (FF 00),

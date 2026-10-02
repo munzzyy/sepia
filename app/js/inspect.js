@@ -4,7 +4,7 @@
 // "low" = harmless technical detail. The same report runs on exported bytes
 // to prove the scrub worked, so it must be honest in both directions.
 
-import { startsWith, sigBytes, utf8 } from "./bytes.js";
+import { startsWith, sigBytes, utf8, inflate, asciiZ } from "./bytes.js";
 import { scanJpeg, exifPayload, xmpPayload, sniffTrailer } from "./jpegscan.js";
 import { parseTiff, gpsToDecimal } from "./tiff.js";
 import { scanPng, pngText, PNG_BENIGN } from "./pngscan.js";
@@ -188,6 +188,53 @@ function pushExifItems(items, tiff, out) {
   }
 }
 
+// A block that parses to nothing still carries bytes; it must not read as clean.
+function exifItems(items, tiff, out) {
+  if (tiff.ok && (tiff.fields.length || tiff.thumbnail)) pushExifItems(items, tiff, out);
+  else items.push({ id: "exif:unreadable", severity: "medium", label: "Exif block", value: "present but unreadable" });
+}
+
+const ACSP = sigBytes("acsp");
+const iccItem = (ok) =>
+  ok
+    ? { id: "icc", severity: "low", label: "Color profile", value: "ICC profile" }
+    : { id: "icc:invalid", severity: "medium", label: "Color profile", value: "not a valid ICC profile" };
+
+// PNG and WebP allow one profile, so a second chunk turns the line medium.
+function pushChunkIcc(items, seen, ok) {
+  if (seen.at === undefined) {
+    seen.at = items.length;
+    items.push(iccItem(ok));
+  } else {
+    items[seen.at] = iccItem(false);
+  }
+}
+
+// One profile: sequence numbers 1..N once each, all agreeing on N, and only segment 1 holds the header.
+function jpegIccValid(bytes, segs) {
+  const n = bytes[segs[0].payloadOff + 13];
+  if (!n || segs.length !== n) return false;
+  const seen = new Set();
+  for (const seg of segs) {
+    const seq = bytes[seg.payloadOff + 12];
+    if (seg.payloadLen < 14 || bytes[seg.payloadOff + 13] !== n || seq < 1 || seq > n || seen.has(seq)) return false;
+    seen.add(seq);
+  }
+  const first = segs.find((seg) => bytes[seg.payloadOff + 12] === 1);
+  const at = first.payloadOff + 14 + 36;
+  return at + 4 <= first.payloadOff + first.payloadLen && startsWith(bytes, at, ACSP);
+}
+
+async function pngIccValid(bytes, chunk) {
+  const end = chunk.payloadOff + chunk.payloadLen;
+  const keyword = asciiZ(bytes, chunk.payloadOff, Math.min(80, chunk.payloadLen));
+  if (keyword === null) return false;
+  const dataOff = chunk.payloadOff + keyword.length + 2;
+  if (dataOff >= end || bytes[dataOff - 1] !== 0) return false;
+  const profile = await inflate(bytes.subarray(dataOff, end), 64);
+  return !!profile && startsWith(profile, 36, ACSP);
+}
+
 function xmpItem(items, text) {
   if (!text) return;
   const hits = [];
@@ -214,12 +261,9 @@ async function inspectJpeg(bytes, out) {
   let unknownAppBytes = 0;
   for (const seg of scan.segments) {
     switch (seg.kind) {
-      case "exif": {
-        const tiff = parseTiff(exifPayload(bytes, seg));
-        if (tiff.ok) pushExifItems(items, tiff, out);
-        else items.push({ id: "exif:unreadable", severity: "medium", label: "Exif block", value: "present but unreadable" });
+      case "exif":
+        exifItems(items, parseTiff(exifPayload(bytes, seg)), out);
         break;
-      }
       case "xmp":
         xmpItem(items, utf8(bytes, seg.payloadOff, Math.min(seg.payloadLen, 65536)));
         break;
@@ -236,9 +280,6 @@ async function inspectJpeg(bytes, out) {
         });
         break;
       case "icc":
-        if (!items.some((i) => i.id === "icc")) {
-          items.push({ id: "icc", severity: "low", label: "Color profile", value: "ICC profile" });
-        }
         break;
       case "mpf":
         items.push({ id: "mpf", severity: "medium", label: "Multi-picture data", value: "extra embedded images likely" });
@@ -274,6 +315,8 @@ async function inspectJpeg(bytes, out) {
         break;
     }
   }
+  const icc = scan.segments.filter((seg) => seg.kind === "icc");
+  if (icc.length) items.push(iccItem(jpegIccValid(bytes, icc)));
   if (unknownApp) {
     items.push({
       id: "app-unknown",
@@ -341,6 +384,7 @@ async function inspectPng(bytes, out) {
       detail: "Nonstandard data this X-ray cannot itemize. Re-encoding removes it all the same.",
     });
   }
+  const icc = {};
   for (const chunk of scan.chunks) {
     if (chunk.type === "tEXt" || chunk.type === "zTXt" || chunk.type === "iTXt") {
       const decoded = await pngText(bytes, chunk);
@@ -360,12 +404,11 @@ async function inspectPng(bytes, out) {
         detail: lower === "parameters" ? "AI generation prompt and settings." : undefined,
       });
     } else if (chunk.type === "eXIf") {
-      const tiff = parseTiff(bytes.subarray(chunk.payloadOff, chunk.payloadOff + chunk.payloadLen));
-      if (tiff.ok) pushExifItems(items, tiff, out);
+      exifItems(items, parseTiff(bytes.subarray(chunk.payloadOff, chunk.payloadOff + chunk.payloadLen)), out);
     } else if (chunk.type === "tIME") {
       items.push({ id: "png-time", severity: "medium", label: "Last modified", value: "timestamp chunk" });
     } else if (chunk.type === "iCCP") {
-      items.push({ id: "icc", severity: "low", label: "Color profile", value: "ICC profile" });
+      pushChunkIcc(items, icc, await pngIccValid(bytes, chunk));
     }
   }
   if (scan.incomplete) {
@@ -414,14 +457,14 @@ async function inspectWebp(bytes, out) {
       detail: "Nonstandard data this X-ray cannot itemize. Re-encoding removes it all the same.",
     });
   }
+  const icc = {};
   for (const chunk of scan.chunks) {
     if (chunk.type === "EXIF") {
-      const tiff = parseTiff(webpExifPayload(bytes, chunk));
-      if (tiff.ok) pushExifItems(out.items, tiff, out);
+      exifItems(out.items, parseTiff(webpExifPayload(bytes, chunk)), out);
     } else if (chunk.type === "XMP ") {
       xmpItem(out.items, utf8(bytes, chunk.payloadOff, Math.min(chunk.payloadLen, 65536)));
     } else if (chunk.type === "ICCP") {
-      out.items.push({ id: "icc", severity: "low", label: "Color profile", value: "ICC profile" });
+      pushChunkIcc(out.items, icc, chunk.payloadLen >= 40 && startsWith(bytes, chunk.payloadOff + 36, ACSP));
     }
   }
   if (scan.incomplete) {
