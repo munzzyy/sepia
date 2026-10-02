@@ -107,6 +107,11 @@ Nothing here runs in CI. Before calling a build good:
   confirm the page rescales without a relaunch.
 - Save and Share both reach the system share sheet with a real file
   (`UIActivityViewController`), not a silent no-op.
+- Save all after scrubbing a batch of three. Does the share sheet get all
+  three files, or only the first one?
+- Open a full-resolution camera photo and export it once as PNG and once
+  as JPEG. Write down what the proof screen says for each. Nobody has
+  checked WebKit's encoders against it yet.
 
 ## The no-install alternative
 

@@ -124,7 +124,10 @@ static host, or `node test/serve_local.mjs` locally. Offline (the service
 worker) and installability need a secure origin, which means https, or
 localhost while you test. `app/` can sit at the domain root or under a
 subpath like `example.com/sepia/`. Plain http from anywhere else still
-works, it just won't cache. The Android wrapper (`cd android && ./gradlew assembleRelease`)
+works, it just won't cache. On localhost the worker answers from its cache
+too, so your edits to `app/` won't show until you clear the site data or
+tick "Bypass for network" in Chromium's devtools (Application, Service
+workers). The Android wrapper (`cd android && ./gradlew assembleRelease`)
 syncs `app/` into its assets on every build, so the APK can't drift from the
 site.
 
@@ -136,12 +139,9 @@ npm run fixtures      # regenerate demo + test images
 
 ## Roadmap
 
-What is left needs more than the code in this repo: a release, a real
-phone, or a native speaker.
+What is left needs more than the code in this repo: the published
+release notes, a real phone, or a native speaker.
 
-- A release with everything under Unreleased in [CHANGELOG.md](CHANGELOG.md).
-  Until it is cut, the APK and the F-Droid build are 0.5.1 and have none of
-  those fixes.
 - The signing certificate digest in the release notes for v0.4.0 through
   v0.5.1. Those releases only show the sha256 GitHub lists for each file.
   Every APK released so far is signed by the same certificate, SHA-256

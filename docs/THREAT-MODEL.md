@@ -1,13 +1,13 @@
 # Sepia threat model
 
 What this tool defends against, what it doesn't, and where the sharp
-edges are. If you're deciding whether to trust Sepia with a photo that
-actually matters, read this whole page first. It's short on purpose.
+edges are. Deciding whether to trust Sepia with a photo that actually
+matters? Read this whole page first. It's short on purpose.
 
 ## What it protects you from
 
 The adversary is whoever you send the image to, plus everyone they forward
-it to, plus every scraper that ever downloads it. What they'd learn beyond
+it to, plus every scraper that ever downloads it. What they would learn beyond
 the pixels: where the photo was taken (Exif GPS, XMP location), whose
 camera took it (artist and owner-name fields, body and lens serials, the
 unique image IDs that let two separate photos be pinned to one device),
@@ -21,7 +21,7 @@ carried around invisibly by every viewer and messenger that ships it.
 
 Sepia surfaces all of that before you send, and it makes your redactions
 real. Ink and pixelation get drawn into the pixel data itself. The file is
-re-encoded afterward, so there's no annotation layer to peel off, no
+re-encoded afterward, so there is no annotation layer to peel off, no
 "undo" living in the file.
 
 One design decision does most of the security work, so I'll be precise
@@ -41,7 +41,7 @@ standard image and color chunks. The filter only removes whole chunks. JPEG
 output goes out exactly as the encoder wrote it.
 
 And then the output gets checked anyway. The proof screen is the same
-parser that judged your original, pointed at the bytes you're about to
+parser that judged your original, pointed at the bytes you are about to
 share. If a platform encoder someday writes something surprising into the
 export, it lands on that screen, not in the dark.
 
@@ -84,7 +84,8 @@ goes through the browser's share-target machinery, which parks the file
 in a cache entry that Sepia deletes on pickup.
 
 The Android app has no INTERNET permission, so the process cannot open a
-socket. That's enforced by the OS and visible in the manifest. An image
+socket. That's enforced by the OS and visible in the
+[manifest](https://github.com/munzzyy/sepia/blob/main/android/app/src/main/AndroidManifest.xml). An image
 shared into the app streams from the content resolver straight into the
 page through a local interception; Sepia never writes it to disk. Exports
 go where you point them: the share sheet (through a scoped cache file,

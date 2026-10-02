@@ -1,6 +1,6 @@
 # Releasing Sepia
 
-The whole flow, in order. Nothing here is optional; the gates exist because
+The whole flow in order. Nothing here is optional; the gates exist because
 each one has caught a real bug.
 
 ## 1. Verify
@@ -15,11 +15,16 @@ node tools/extract-strings.mjs    # es catalog complete
 
 ## 2. Version
 
-Bump together (check-clean fails if any drift): `package.json`,
-`app/js/main.js` VERSION, `app/sw.js` VERSION (`sepia-v<x>`),
-`android/app/build.gradle.kts` versionName + versionCode
-(major*10000 + minor*100 + patch, so 0.5.1 is 501), `CHANGELOG.md`
-heading, plus a fastlane changelog file named `<versionCode>.txt`.
+Bump all of these together. check-clean fails if any of them drift.
+
+- `package.json`
+- `app/js/main.js` VERSION
+- `app/sw.js` VERSION (`sepia-v<x>`)
+- `android/app/build.gradle.kts` versionName and versionCode. The code is
+  major*10000 + minor*100 + patch, so 0.5.1 is 501.
+- the `CHANGELOG.md` heading
+- a fastlane changelog at
+  `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`
 
 ## 3. Build and sign
 
@@ -53,5 +58,6 @@ digest, which the README tells sideloaders to check.
   URL to confirm the new version actually serves (hosts cache).
 - Store screenshots regenerate with `node tools/shots-store.mjs` when the
   UI changed.
-- F-Droid picks up new tags via its checkupdates once the app is in
-  fdroiddata; keep the tag on the exact commit the APK was built from.
+- F-Droid picks up new tags through checkupdates and checks its own build
+  against the signed APK, so keep the tag on the exact commit the APK was
+  built from.
