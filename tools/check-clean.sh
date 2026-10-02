@@ -10,7 +10,7 @@ cd "$(dirname "$0")/.."
 # Untracked-but-not-ignored files are scanned too, so a fresh file fails the
 # local run the same way it would fail CI once staged.
 globs=('*.js' '*.mjs' '*.css' '*.html' '*.md' '*.py' '*.sh' '*.json' '*.toml' '*.swift' '*.yml' '*.yaml'
-  ':!:app/vendor/**' ':!:tools/check-clean.sh')
+  '*.txt' '*.kt' '*.kts' '*.xml' ':!:app/vendor/**' ':!:tools/check-clean.sh')
 files=$( (git ls-files -- "${globs[@]}"; git ls-files --others --exclude-standard -- "${globs[@]}") | sort -u )
 
 fail=0
@@ -51,8 +51,14 @@ grep -q "VERSION = \"$ver\"" app/js/main.js || { echo "app/js/main.js VERSION !=
 grep -q "VERSION = \"sepia-v$ver\"" app/sw.js || { echo "app/sw.js VERSION != sepia-v$ver"; bad=1; }
 grep -q "versionName = \"$ver\"" android/app/build.gradle.kts || { echo "gradle versionName != $ver"; bad=1; }
 grep -q "^## $ver" CHANGELOG.md || { echo "CHANGELOG.md missing ## $ver"; bad=1; }
+# versionCode is major*10000 + minor*100 + patch, and F-Droid shows the
+# fastlane changelog named after it; neither shows up wrong until F-Droid.
+IFS=. read -r major minor patch <<< "$ver"
+code=$((major * 10000 + minor * 100 + patch))
+grep -q "versionCode = $code$" android/app/build.gradle.kts || { echo "gradle versionCode != $code"; bad=1; }
+[ -f "fastlane/metadata/android/en-US/changelogs/$code.txt" ] || { echo "missing fastlane/metadata/android/en-US/changelogs/$code.txt"; bad=1; }
 if [ "$bad" -eq 1 ]; then exit 1; fi
-echo "version $ver consistent across package.json, main.js, sw.js, gradle, changelog"
+echo "version $ver consistent across package.json, main.js, sw.js, gradle versionName and versionCode, changelog, fastlane"
 
 if [ "$fail" -eq 0 ]; then echo "clean: no em/en dashes, no AI attribution"; fi
 exit $fail

@@ -15,7 +15,7 @@ jobs:
       - name: tools the suites cross-check against
         run: |
           sudo apt-get update -q
-          sudo apt-get install -qy exiftool poppler-utils
+          sudo apt-get install -qy exiftool
       - name: unit tests
         run: npm test
       - name: i18n catalog complete
@@ -24,8 +24,7 @@ jobs:
         run: bash tools/check-clean.sh
       - name: e2e in chromium and firefox
         run: |
-          sudo apt-get update -q
-          sudo apt-get install -qy chromium-browser exiftool
+          sudo apt-get install -qy chromium-browser
           sudo ln -sf "$(command -v chromium-browser)" /usr/local/bin/chromium
           firefox --version || { echo "firefox is missing, so the Firefox export suite cannot run"; exit 1; }
           node tools/gen-fixtures.mjs

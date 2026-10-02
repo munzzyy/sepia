@@ -6,10 +6,10 @@ each one has caught a real bug.
 ## 1. Verify
 
 ```
-npm test                          # 65 unit tests, exiftool cross-check
-npm run e2e                       # both chromium suites, edge pixel probes
+npm test                          # unit tests, exiftool cross-check
+npm run e2e                       # chromium and firefox suites, edge pixel probes
 bash tools/check-clean.sh         # dashes, attribution, adblock names,
-                                  # version agreement across all five spots
+                                  # version, versionCode, fastlane changelog
 node tools/extract-strings.mjs    # es catalog complete
 ```
 
@@ -17,7 +17,8 @@ node tools/extract-strings.mjs    # es catalog complete
 
 Bump together (check-clean fails if any drift): `package.json`,
 `app/js/main.js` VERSION, `app/sw.js` VERSION (`sepia-v<x>`),
-`android/app/build.gradle.kts` versionName + versionCode, `CHANGELOG.md`
+`android/app/build.gradle.kts` versionName + versionCode
+(major*10000 + minor*100 + patch, so 0.5.1 is 501), `CHANGELOG.md`
 heading, plus a fastlane changelog file named `<versionCode>.txt`.
 
 ## 3. Build and sign
@@ -38,11 +39,13 @@ stable-name `sepia.apk` used by the landing page and Tern.
 git tag v<x.y.z>
 git push origin main --tags
 gh release create v<x.y.z> dist/sepia-<x.y.z>.apk dist/sepia.apk \
-  --title "Sepia <x.y.z>" --notes-file <notes>
+  --title "Sepia <x.y.z>" --notes-file <(bash tools/release-notes.sh <x.y.z>)
 ```
 
 Both APK assets every time: versioned for the record, stable-name so
-`releases/latest/download/sepia.apk` keeps working.
+`releases/latest/download/sepia.apk` keeps working. The notes are the
+CHANGELOG section plus the APK's sha256 and the signing certificate
+digest, which the README tells sideloaders to check.
 
 ## 5. After
 
