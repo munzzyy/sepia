@@ -157,7 +157,6 @@
     <button id="btn-close-confirm" class="btn-ghost del-chip" hidden data-testid="close-confirm" data-i18n>Discard</button>
     <div class="risk-pill" id="risk-pill" role="status"></div>
     <div class="top-actions">
-      <button id="btn-del-box" class="btn-ghost del-chip" hidden data-i18n>Remove box</button>
       <button id="btn-skip" class="btn-ghost" hidden data-testid="skip"></button>
       <button id="btn-undo" class="icon-btn" data-i18n-attr="aria-label" aria-label="Undo" disabled>↶</button>
       <button id="btn-redo" class="icon-btn" data-i18n-attr="aria-label" aria-label="Redo" disabled>↷</button>
@@ -167,12 +166,26 @@
 
   <div id="canvas-wrap" class="canvas-wrap">
     <canvas id="canvas" tabindex="0" aria-describedby="canvas-a11y-note" data-i18n-attr="aria-label" aria-label="Image editor canvas. Press B to add a cover box, arrow keys to move it, Shift and arrows to resize, Delete to remove."></canvas>
-    <p id="canvas-a11y-note" class="sr-only" data-i18n>Covering a face, block of text, or code on this canvas needs a hardware keyboard; a touchscreen screen reader cannot draw a box here yet. Removing metadata does not need the canvas at all: everything the X-ray panel lists comes out on export, with or without any box drawn.</p>
+    <p id="canvas-a11y-note" class="sr-only" data-i18n>To cover a face, a block of text, or a code without dragging, use Add box in the toolbar, then the box buttons under the image to move it, resize it, or remove it. Removing metadata does not need the canvas at all: everything the X-ray panel lists comes out on export, with or without any box drawn.</p>
     <div id="crop-bar" class="crop-bar" hidden>
       <span data-i18n>Drag to choose what to keep</span>
       <button id="btn-crop-apply" class="btn-primary" data-i18n>Apply crop</button>
       <button id="btn-crop-cancel" class="btn-ghost" data-i18n>Cancel</button>
     </div>
+  </div>
+
+  <!-- Above the toolbar, so hiding it on canvas blur never moves a button out from under a press. -->
+  <p id="kbd-hint" class="kbd-hint" hidden data-i18n>B adds a box. Tab cycles boxes and found codes. Arrows move, Shift with arrows resizes, Delete removes, + and - zoom, 0 fits.</p>
+  <div id="box-bar" class="box-bar" role="group" hidden data-i18n-attr="aria-label" aria-label="Selected box">
+    <button class="icon-btn" data-move="-1,0" data-i18n-attr="aria-label,title" aria-label="Move box left" title="Move box left">←</button>
+    <button class="icon-btn" data-move="0,-1" data-i18n-attr="aria-label,title" aria-label="Move box up" title="Move box up">↑</button>
+    <button class="icon-btn" data-move="0,1" data-i18n-attr="aria-label,title" aria-label="Move box down" title="Move box down">↓</button>
+    <button class="icon-btn" data-move="1,0" data-i18n-attr="aria-label,title" aria-label="Move box right" title="Move box right">→</button>
+    <button class="btn-ghost" data-size="1,0" data-i18n>Wider</button>
+    <button class="btn-ghost" data-size="-1,0" data-i18n>Narrower</button>
+    <button class="btn-ghost" data-size="0,1" data-i18n>Taller</button>
+    <button class="btn-ghost" data-size="0,-1" data-i18n>Shorter</button>
+    <button id="btn-del-box" class="btn-ghost del-chip" hidden data-i18n>Remove box</button>
   </div>
 
   <div class="toolbar" role="toolbar" data-i18n-attr="aria-label" aria-label="Redaction tools">
@@ -185,6 +198,9 @@
     <button id="tool-crop" class="tool" data-tool="crop" aria-pressed="false">
       <span class="tool-icon crop-icon"></span><span data-i18n>Crop</span>
     </button>
+    <button id="btn-add-box" class="tool">
+      <span class="tool-icon box-icon"></span><span data-i18n>Add box</span>
+    </button>
     <button id="btn-codes" class="tool" hidden>
       <span class="tool-icon qr-icon"></span><span data-i18n>Find codes</span>
     </button>
@@ -193,7 +209,6 @@
   </div>
 
   <p id="pixelate-note" class="tool-note" hidden data-i18n>Pixelate is for faces and objects. For text or numbers, ink is the safe tool: pixelated text can sometimes be reconstructed.</p>
-  <p id="kbd-hint" class="kbd-hint" hidden data-i18n>B adds a box. Tab cycles boxes and found codes. Arrows move, Shift with arrows resizes, Delete removes, + and - zoom, 0 fits.</p>
 
   <!-- X-ray drawer -->
   <aside id="xray" class="xray" hidden aria-labelledby="xray-title">

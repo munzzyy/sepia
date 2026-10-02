@@ -86,11 +86,11 @@ anything serious. Sepia removes metadata and covers the pixels you pick.
 It does not find sensitive content for you (QR codes excepted, where the
 browser can detect them), it refuses
 PDFs rather than half-handle them, and no scrubber on earth removes a
-camera sensor's noise fingerprint from the pixels themselves. Covering a
-face or a block of text on the canvas needs a pointer drag or a hardware
-keyboard; a touchscreen screen reader can't do that yet, though every
-metadata item the X-ray lists still comes out on export with no canvas
-interaction at all.
+camera sensor's noise fingerprint from the pixels themselves. To cover a
+face or a block of text you drag a box, use a hardware keyboard, or tap
+Add box and move it with the buttons under the image, which is the way in
+for a touchscreen screen reader. Every metadata item the X-ray lists comes
+out on export with no canvas interaction at all.
 
 ## Check the claims, don't take them
 

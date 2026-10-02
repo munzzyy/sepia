@@ -106,6 +106,17 @@ async function drag(c, from, to) {
   await sleep(120);
 }
 
+// A pointer click on an element's center: no key events, the way a touchscreen screen reader activates it.
+async function tap(c, selector) {
+  const at = await c.evalJs(`(() => { const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width }; })()`);
+  if (!at.w) throw new Error(`${selector} is not visible`);
+  await c.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: at.x, y: at.y });
+  await c.send("Input.dispatchMouseEvent", { type: "mousePressed", x: at.x, y: at.y, button: "left", clickCount: 1 });
+  await c.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: at.x, y: at.y, button: "left", clickCount: 1 });
+  await sleep(60);
+}
+
 async function canvasBox(c) {
   return c.evalJs(`(() => { const r = document.getElementById("canvas").getBoundingClientRect();
     return { x: r.x, y: r.y, w: r.width, h: r.height }; })()`);
@@ -378,6 +389,53 @@ async function main() {
     await waitFor(() => c.evalJs("__sepiaApi.state.screen === 'edit'"), "clean fixture open");
     const cleanReport = await c.evalJs("__sepiaApi.state.report");
     check("negative control: clean input reports no serious leaks", cleanReport.counts.high === 0 && cleanReport.counts.medium === 0, JSON.stringify(cleanReport.counts));
+
+    // ------------------------------------------- box buttons, pointer only
+    await c.evalJs("document.getElementById('btn-close').click(); 'ok'");
+    await waitFor(() => c.evalJs("__sepiaApi.state.screen === 'start'"), "back to start for box buttons");
+    await c.evalJs(
+      `(async () => { const cv = new OffscreenCanvas(400, 300); const ctx = cv.getContext("2d");
+        ctx.fillStyle = "rgb(200, 180, 140)"; ctx.fillRect(0, 0, 400, 300);
+        const b = new Uint8Array(await (await cv.convertToBlob({ type: "image/png" })).arrayBuffer());
+        await __sepiaApi.openBytes(b, "", "image/png"); })()`,
+      true,
+    );
+    await waitFor(() => c.evalJs("__sepiaApi.state.screen === 'edit'"), "png open for box buttons");
+    check("box buttons: hidden with nothing selected", await c.evalJs("document.getElementById('box-bar').hidden"));
+    await tap(c, "#btn-add-box");
+    check("box buttons: Add box places a cover box", (await c.evalJs("__sepiaApi.state.ops")) === 1);
+    check("box buttons: they show once a box is selected", await c.evalJs("!document.getElementById('box-bar').hidden"));
+    const added = await c.evalJs("({ ...__sepiaApi.session().editor.ops[0].rect })");
+    for (const sel of ['[data-move="1,0"]', '[data-move="1,0"]', '[data-move="0,1"]', '[data-size="1,0"]', '[data-size="1,0"]', '[data-size="0,1"]']) {
+      await tap(c, `#box-bar ${sel}`);
+    }
+    const moved = await c.evalJs("({ ...__sepiaApi.session().editor.ops[0].rect })");
+    check(
+      "box buttons: Move and Grow change the box",
+      moved.x > added.x && moved.y > added.y && moved.w > added.w && moved.h > added.h,
+      JSON.stringify({ added, moved }),
+    );
+    await sleep(450);
+    const said = await c.evalJs("document.getElementById('sr-live').textContent");
+    check("box buttons: the new position is announced", /across/.test(said), said);
+    await tap(c, "#btn-export");
+    await waitFor(() => c.evalJs("__sepiaApi.state.screen === 'done' && __sepiaApi.session().exported?.type === 'image/png'"), "box export");
+    const probe = await c.evalJs(
+      `(async () => { const s = __sepiaApi.session(); const r = s.editor.ops[0].rect;
+        const bmp = await createImageBitmap(s.exported.blob);
+        const cv = new OffscreenCanvas(bmp.width, bmp.height); const ctx = cv.getContext("2d"); ctx.drawImage(bmp, 0, 0);
+        const at = (x, y) => Array.from(ctx.getImageData(x, y, 1, 1).data);
+        const x0 = Math.floor(r.x), x1 = Math.ceil(r.x + r.w) - 1, y0 = Math.floor(r.y), y1 = Math.ceil(r.y + r.h) - 1;
+        const cx = Math.round(r.x + r.w / 2), cy = Math.round(r.y + r.h / 2);
+        return {
+          inside: [at(x0, cy), at(x1, cy), at(cx, y0), at(cx, y1), at(cx, cy)],
+          outside: [at(x0 - 1, cy), at(x1 + 1, cy), at(cx, y0 - 1), at(cx, y1 + 1), at(2, 2)],
+        }; })()`,
+      true,
+    );
+    const isInk = (p) => p.join() === "14,12,10,255";
+    check("box buttons: ink reaches every edge of the box", probe.inside.every(isInk), JSON.stringify(probe.inside));
+    check("box buttons: everything outside the box is untouched", probe.outside.every((p) => p.join() === "200,180,140,255"), JSON.stringify(probe.outside));
 
     const finalErrs = await c.evalJs("(__sepiaErrors || []).slice(0, 8)");
     check("no page errors across the whole run", finalErrs.length === 0, JSON.stringify(finalErrs));

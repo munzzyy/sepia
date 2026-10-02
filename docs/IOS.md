@@ -78,14 +78,15 @@ not by the pipeline; see "Verify on device" below.
 ## What Sepia's own web accessibility gives you here, and what it does not
 
 The page's accessibility work (keyboard box creation, arrow-key movement,
-live-region announcements, labeled controls) is the same code on every
-platform, iOS included. Two limits are worth stating plainly rather than
-letting someone find them the hard way:
+the on-screen box buttons, live-region announcements, labeled controls) is
+the same code on every platform, iOS included. Two things are worth stating
+plainly rather than letting someone find them the hard way:
 
-- **Covering a face, a block of text, or a code needs a pointer drag or a
-  hardware keyboard.** VoiceOver on a touchscreen, with no keyboard
-  attached, cannot draw a box on the canvas today. This is not iOS-specific
-  and is not fixed by anything in this wrapper.
+- **Without a pointer drag or a hardware keyboard, boxes go through
+  buttons.** Add box in the toolbar puts a cover box in the middle of the
+  image. The buttons under the image move it, resize it or remove it. That
+  is the path for VoiceOver on a touchscreen. Nobody has walked it with
+  VoiceOver on a real device yet, so it is on the list below.
 - **Metadata removal does not need any of that.** Everything the X-ray
   panel lists (GPS, camera identity, the hidden preview, timestamps, all of
   it) comes out on export whether or not a single box was ever drawn. A
@@ -99,6 +100,9 @@ Nothing here runs in CI. Before calling a build good:
 - VoiceOver reaches every control: the intake picker, the toolbar, the
   X-ray list and its Copy/Show actions, the export format controls, Save
   and Share.
+- With VoiceOver and no keyboard: Add box, then the move, Wider, Taller and
+  Remove box buttons. Each one should announce where the box is now. Then
+  export and check the box landed where VoiceOver said it was.
 - Dynamic Type: change the system text size while Sepia is open and
   confirm the page rescales without a relaunch.
 - Save and Share both reach the system share sheet with a real file

@@ -75,8 +75,8 @@ export const es = {
   "X-ray": "Radiografía",
   "Image editor canvas. Press B to add a cover box, arrow keys to move it, Shift and arrows to resize, Delete to remove.":
     "Lienzo del editor de imagen. Pulsa B para añadir un recuadro de cobertura, flechas para moverlo, Shift y flechas para cambiar su tamaño, Suprimir para quitarlo.",
-  "Covering a face, block of text, or code on this canvas needs a hardware keyboard; a touchscreen screen reader cannot draw a box here yet. Removing metadata does not need the canvas at all: everything the X-ray panel lists comes out on export, with or without any box drawn.":
-    "Tapar una cara, un bloque de texto o un código en este lienzo necesita un teclado físico; un lector de pantalla táctil todavía no puede dibujar un recuadro aquí. Quitar los metadatos no necesita el lienzo en absoluto: todo lo que lista el panel de radiografía sale al exportar, con o sin ningún recuadro dibujado.",
+  "To cover a face, a block of text, or a code without dragging, use Add box in the toolbar, then the box buttons under the image to move it, resize it, or remove it. Removing metadata does not need the canvas at all: everything the X-ray panel lists comes out on export, with or without any box drawn.":
+    "Para tapar una cara, un bloque de texto o un código sin arrastrar, usa Añadir recuadro en la barra de herramientas y luego los botones de recuadro bajo la imagen para moverlo, cambiar su tamaño o quitarlo. Quitar los metadatos no necesita el lienzo en absoluto: todo lo que lista el panel de radiografía sale al exportar, con o sin ningún recuadro dibujado.",
   "Drag to choose what to keep": "Arrastra para elegir qué conservar",
   "Apply crop": "Aplicar recorte",
   "Cancel": "Cancelar",
@@ -199,6 +199,18 @@ export const es = {
   "No more images in the queue.": "No quedan imágenes en la cola.",
   "Remove all of this & export": "Quitar todo esto y exportar",
   "Remove box": "Quitar recuadro",
+  "Add box": "Añadir recuadro",
+  "Selected box": "Recuadro seleccionado",
+  "Move box left": "Mover el recuadro a la izquierda",
+  "Move box right": "Mover el recuadro a la derecha",
+  "Move box up": "Subir el recuadro",
+  "Move box down": "Bajar el recuadro",
+  "Wider": "Más ancho",
+  "Narrower": "Más estrecho",
+  "Taller": "Más alto",
+  "Shorter": "Más bajo",
+  "Cover box added at the center. The box buttons under the image move it, resize it, or remove it.":
+    "Recuadro de cobertura añadido en el centro. Los botones de recuadro bajo la imagen lo mueven, cambian su tamaño o lo quitan.",
   "Scrubbing…": "Limpiando…",
   "Skip ({count} left)": "Saltar (quedan {count})",
   "This file looks damaged or cut short; it could not be opened.":

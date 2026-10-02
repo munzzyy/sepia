@@ -416,9 +416,23 @@ export function createCanvasView(host) {
     }, 350);
   }
 
+  const keyStep = () => Math.max(2, Math.round(8 / view.scale));
+
+  // The arrow keys and the on-screen box buttons both land here.
+  function nudgeSelected(dx, dy, resize) {
+    if (!selected) return false;
+    const editor = host.getEditor();
+    if (resize) resizeOp(editor, selected.id, dx, dy);
+    else moveOp(editor, selected.id, dx, dy);
+    host.onChange();
+    announceSelected();
+    requestRender();
+    return true;
+  }
+
   canvas.addEventListener("keydown", (ev) => {
     const editor = host.getEditor();
-    const step = ev.ctrlKey ? 1 : Math.max(2, Math.round(8 / view.scale));
+    const step = ev.ctrlKey ? 1 : keyStep();
     const key = ev.key;
     if (key === "Tab") {
       // Only consumed while there is something to cycle to; at the ends
@@ -497,11 +511,7 @@ export function createCanvasView(host) {
         announceSelected();
         requestRender();
       } else if (selected) {
-        if (ev.shiftKey) resizeOp(editor, selected.id, dx * step, dy * step);
-        else moveOp(editor, selected.id, dx * step, dy * step);
-        host.onChange();
-        announceSelected();
-        requestRender();
+        nudgeSelected(dx * step, dy * step, ev.shiftKey);
       } else {
         // Nothing selected: arrows pan the view, which zoom needs anyway.
         view.tx -= dx * 60;
@@ -512,7 +522,7 @@ export function createCanvasView(host) {
     }
   });
 
-  function addKeyboardBox() {
+  function addKeyboardBox(hint) {
     const editor = host.getEditor();
     const bmp = host.getBitmap();
     if (!bmp) return;
@@ -526,9 +536,7 @@ export function createCanvasView(host) {
       selected = op;
       host.onSelect(op);
       host.onChange();
-      host.announce(
-        t("Cover box added at the center. Arrow keys move it, Shift and arrows resize, Delete removes."),
-      );
+      host.announce(hint || t("Cover box added at the center. Arrow keys move it, Shift and arrows resize, Delete removes."));
       requestRender();
     }
   }
@@ -564,6 +572,9 @@ export function createCanvasView(host) {
     },
     getCropDraft: () => (cropDraft ? normRect(cropDraft, host.getEditor().width, host.getEditor().height) : null),
     addKeyboardBox,
+    // A button press has no key repeat, so it moves four arrow-key steps.
+    moveSelected: (dx, dy) => nudgeSelected(dx * 4 * keyStep(), dy * 4 * keyStep(), false),
+    resizeSelected: (dw, dh) => nudgeSelected(dw * 4 * keyStep(), dh * 4 * keyStep(), true),
     destroy() {
       ro.disconnect();
       if (raf) cancelAnimationFrame(raf);

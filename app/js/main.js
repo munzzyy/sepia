@@ -402,10 +402,14 @@ function rescueFocus() {
   if (document.activeElement?.disabled) $("canvas").focus({ preventScroll: true });
 }
 
-// Touch users cannot press Delete; a selected box gets a visible remove
-// control instead.
+// Touch and screen-reader users get visible move, resize and remove controls for a selected box.
 function updateDeleteChip() {
-  $("btn-del-box").hidden = !view?.getSelected();
+  const bar = $("box-bar");
+  const hide = !view?.getSelected();
+  const hadFocus = bar.contains(document.activeElement);
+  bar.hidden = hide;
+  $("btn-del-box").hidden = hide;
+  if (hide && hadFocus) $("btn-add-box").focus();
 }
 
 function setTool(next) {
@@ -601,6 +605,17 @@ function wireEvents() {
   $("btn-del-box").addEventListener("click", () => {
     view.deleteSelected();
   });
+  $("btn-add-box").addEventListener("click", () => {
+    view.addKeyboardBox(t("Cover box added at the center. The box buttons under the image move it, resize it, or remove it."));
+  });
+  for (const btn of document.querySelectorAll("#box-bar [data-move]")) {
+    const [dx, dy] = btn.dataset.move.split(",").map(Number);
+    btn.addEventListener("click", () => view.moveSelected(dx, dy));
+  }
+  for (const btn of document.querySelectorAll("#box-bar [data-size]")) {
+    const [dw, dh] = btn.dataset.size.split(",").map(Number);
+    btn.addEventListener("click", () => view.resizeSelected(dw, dh));
+  }
 
   $("btn-undo").addEventListener("click", () => {
     announce(undo(session.editor) ? t("Undone") : t("Nothing to undo"));
