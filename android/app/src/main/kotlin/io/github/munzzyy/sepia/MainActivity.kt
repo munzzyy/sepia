@@ -52,9 +52,19 @@ class MainActivity : ComponentActivity() {
     private val chooseFile = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val callback = filePathCallback
         filePathCallback = null
-        callback?.onReceiveValue(
-            WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data),
-        )
+        callback?.onReceiveValue(pickedUris(result.resultCode, result.data))
+    }
+
+    // A multi-select comes back as ClipData, which FileChooserParams.parseResult ignores.
+    private fun pickedUris(resultCode: Int, data: Intent?): Array<Uri>? {
+        val clip = data?.clipData
+        if (resultCode == RESULT_OK && clip != null && clip.itemCount > 0) {
+            val uris = (0 until clip.itemCount).mapNotNull { clip.getItemAt(it).uri }
+                .filter { it.scheme == "content" }
+                .take(50)
+            if (uris.isNotEmpty()) return uris.toTypedArray()
+        }
+        return WebChromeClient.FileChooserParams.parseResult(resultCode, data)
     }
 
     // Android 9 has no MediaStore write without a storage permission, so a save goes through the system picker there.

@@ -55,6 +55,13 @@ test("Android 9 saves through the system picker", () => {
   );
 });
 
+test("a multi-select in the picker reaches the page", () => {
+  const src = read(KT + "MainActivity.kt");
+  assert.match(src, /callback\?\.onReceiveValue\(pickedUris\(result\.resultCode, result\.data\)\)/);
+  assert.match(src, /val clip = data\?\.clipData/);
+  assert.match(src, /\.filter \{ it\.scheme == "content" \}\s*\.take\(50\)/);
+});
+
 test("the wrapper names the WebView build that crashes on BarcodeDetector", () => {
   assert.match(read(KT + "SepiaBridge.kt"), /fun codesSafe\(\): Boolean = WebView\.getCurrentWebViewPackage\(\)\?\.packageName != "com\.android\.webview"/);
 });
