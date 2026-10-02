@@ -114,7 +114,8 @@ drives the real app in Chromium, redacts, exports, and then checks the
 output outside the app: the parsers re-run in node against the exported
 bytes, exiftool reads the same file (the suite says so loudly if exiftool
 is missing), and pixel probes confirm the covered region is covered to
-every edge.
+every edge. A Firefox suite runs the export and batch paths again there,
+since Firefox's encoder writes different bytes.
 
 ## Run it
 
@@ -130,7 +131,7 @@ site.
 
 ```
 npm test              # unit tests (node >= 24)
-npm run e2e           # chromium end-to-end suites
+npm run e2e           # chromium and firefox end-to-end suites
 npm run fixtures      # regenerate demo + test images
 ```
 

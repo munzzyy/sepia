@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import zlib from "node:zlib";
 import { inflate } from "../app/js/bytes.js";
 import { scanJpeg } from "../app/js/jpegscan.js";
+import { scanPng, stripPngExtras } from "../app/js/pngscan.js";
 import { inspectImage } from "../app/js/inspect.js";
 import { verifyClean } from "../app/js/verify.js";
 import { headline } from "../app/js/report.js";
@@ -181,4 +182,25 @@ test("custom WebP chunks are reported", async () => {
   withCustom.set(u32le(withCustom.length - 8), 4);
   const report = await inspectImage(withCustom);
   assert.ok(report.items.some((i) => i.id === "chunk-unknown"), JSON.stringify(report.items.map((i) => i.id)));
+});
+
+test("firefox's deBG chunk fails the proof until the export filter drops it", async () => {
+  const png = buildPng();
+  const iendAt = png.length - 12;
+  const body = concat(str("deBG"), str("7E33FC1244975E73"));
+  const debg = concat(u32be(16), body, u32be(crc32(body)));
+  const raw = concat(png.subarray(0, iendAt), debg, png.subarray(iendAt));
+  assert.equal((await verifyClean(raw)).clean, false);
+  const filtered = stripPngExtras(raw);
+  assert.deepEqual(scanPng(filtered).chunks.map((c) => c.type), ["IHDR", "IDAT", "IEND"]);
+  assert.equal((await verifyClean(filtered)).clean, true);
+  assert.deepEqual(filtered, png);
+});
+
+test("the export filter passes a png with nothing to drop through untouched", () => {
+  const png = buildPng();
+  assert.equal(stripPngExtras(png), png);
+  assert.deepEqual(stripPngExtras(png), buildPng());
+  const jpeg = structuralJpeg();
+  assert.equal(stripPngExtras(jpeg), jpeg);
 });

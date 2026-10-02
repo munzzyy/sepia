@@ -33,6 +33,13 @@ the X-ray missed some exotic metadata block, that block has no route into
 the output. Detection quality affects what you get warned about, never
 what gets removed.
 
+The bytes you get are what the encoder wrote, with one filter on PNGs.
+Firefox adds a small deBG chunk to PNGs that a web page encodes, as part of
+its fingerprinting protection. Its value is tied to your browser profile.
+So before the check below runs, Sepia drops every PNG chunk outside the
+standard image and color chunks. The filter only removes whole chunks. JPEG
+output goes out exactly as the encoder wrote it.
+
 And then the output gets checked anyway. The proof screen is the same
 parser that judged your original, pointed at the bytes you're about to
 share. If a platform encoder someday writes something surprising into the

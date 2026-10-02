@@ -7,7 +7,7 @@
 import { startsWith, sigBytes, utf8 } from "./bytes.js";
 import { scanJpeg, exifPayload, xmpPayload, sniffTrailer } from "./jpegscan.js";
 import { parseTiff, gpsToDecimal } from "./tiff.js";
-import { scanPng, pngText } from "./pngscan.js";
+import { scanPng, pngText, PNG_BENIGN } from "./pngscan.js";
 import { scanWebp, webpExifPayload } from "./webpscan.js";
 
 export function sniffFormat(bytes) {
@@ -271,13 +271,6 @@ async function inspectJpeg(bytes, out) {
   }
 }
 
-// Structural and color chunks a normal encoder writes; anything else must
-// show up in the report, not vanish (a custom ancillary chunk carries data
-// exactly as well as a tEXt).
-const PNG_BENIGN = new Set([
-  "IHDR", "PLTE", "IDAT", "IEND", "tRNS", "gAMA", "cHRM", "sRGB", "sBIT",
-  "bKGD", "hIST", "pHYs", "sPLT", "acTL", "fcTL", "fdAT",
-]);
 const PNG_HANDLED = new Set(["tEXt", "zTXt", "iTXt", "eXIf", "tIME", "iCCP"]);
 
 async function inspectPng(bytes, out) {

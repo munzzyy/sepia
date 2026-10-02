@@ -5,6 +5,14 @@ import { ascii, asciiZ, inflate, startsWith, u32, utf8 } from "./bytes.js";
 
 const PNG_SIG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
+// Structural and color chunks a normal encoder writes; anything else must
+// show up in the report, not vanish (a custom ancillary chunk carries data
+// exactly as well as a tEXt).
+export const PNG_BENIGN = new Set([
+  "IHDR", "PLTE", "IDAT", "IEND", "tRNS", "gAMA", "cHRM", "sRGB", "sBIT",
+  "bKGD", "hIST", "pHYs", "sPLT", "acTL", "fcTL", "fdAT",
+]);
+
 export function scanPng(bytes) {
   if (!startsWith(bytes, 0, PNG_SIG)) return { ok: false, chunks: [], trailer: null, incomplete: true };
   const chunks = [];
@@ -72,4 +80,22 @@ export async function pngText(bytes, chunk, maxText = 2048) {
     return { keyword, text: utf8(bytes, p, Math.min(end - p, maxText)) || "" };
   }
   return null;
+}
+
+// Encoder output only: Firefox's fingerprinting protection tags canvas PNGs with a per-profile deBG chunk.
+export function stripPngExtras(bytes) {
+  const scan = scanPng(bytes);
+  if (!scan.ok || scan.incomplete) return bytes;
+  const kept = scan.chunks.filter((c) => PNG_BENIGN.has(c.type) || c.type === "iCCP");
+  if (kept.length === scan.chunks.length) return bytes;
+  const tail = scan.trailer ? bytes.subarray(scan.trailer.off) : new Uint8Array(0);
+  const out = new Uint8Array(8 + kept.reduce((n, c) => n + c.len, 0) + tail.length);
+  out.set(bytes.subarray(0, 8), 0);
+  let at = 8;
+  for (const c of kept) {
+    out.set(bytes.subarray(c.off, c.off + c.len), at);
+    at += c.len;
+  }
+  out.set(tail, at);
+  return out;
 }

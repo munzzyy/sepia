@@ -6,6 +6,7 @@ import { inspectImage } from "./inspect.js";
 import { createEditor, undo, redo, setCrop, addOp, paintOps } from "./editor.js";
 import { bake, encode, makeMosaic } from "./render.js";
 import { verifyClean } from "./verify.js";
+import { stripPngExtras } from "./pngscan.js";
 import { scrubbedName, nameLeaks } from "./names.js";
 import { findCodes, codesSupported } from "./barcodes.js";
 import { createCanvasView } from "./canvasview.js";
@@ -232,6 +233,14 @@ async function readEntryBytes(entry) {
   return { bytes: new Uint8Array(await res.arrayBuffer()), name: "", mime: res.headers.get("content-type") || "" };
 }
 
+// Save, Share and Copy get a blob rebuilt from the filtered bytes, so what leaves is what was verified.
+async function encodeOutput(canvas, type, quality) {
+  const raw = await encode(canvas, type, type === "image/jpeg" ? quality : undefined);
+  const bytes = new Uint8Array(await raw.arrayBuffer());
+  const kept = type === "image/png" ? stripPngExtras(bytes) : bytes;
+  return kept === bytes ? { blob: raw, bytes } : { blob: new Blob([kept], { type }), bytes: kept };
+}
+
 // Metadata-only scrub of one queue entry: decode, re-encode through the same
 // bake()/encode() path a hand-edited export uses but with an untouched
 // editor (no ops, no crop), then verify the output the same way. Any failure
@@ -263,8 +272,7 @@ async function scrubOne(entry, index) {
     const srcIsPng = report.format === "png" || report.format === "gif" || report.format === "bmp";
     const type = srcIsPng ? "image/png" : "image/jpeg";
     const canvas = bake(bitmap, editor);
-    const blob = await encode(canvas, type, type === "image/jpeg" ? 0.9 : undefined);
-    const outBytes = new Uint8Array(await blob.arrayBuffer());
+    const { blob, bytes: outBytes } = await encodeOutput(canvas, type, 0.9);
     const verify = await verifyClean(outBytes);
     return { name, ok: true, outName: scrubbedName(type), blob, verify, type };
   } catch (err) {
@@ -438,8 +446,7 @@ async function reExport(type, quality) {
   let bytes;
   try {
     const canvas = bake(session.bitmap, session.editor);
-    blob = await encode(canvas, type, type === "image/jpeg" ? quality : undefined);
-    bytes = new Uint8Array(await blob.arrayBuffer());
+    ({ blob, bytes } = await encodeOutput(canvas, type, quality));
   } catch (err) {
     __sepiaErrors.push(`export: ${err}`);
     toast(t("Could not encode this image. It may be too large for this device; try cropping first."), 6000);

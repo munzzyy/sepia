@@ -22,11 +22,12 @@ jobs:
         run: node tools/extract-strings.mjs
       - name: clean check
         run: bash tools/check-clean.sh
-      - name: e2e in chromium
+      - name: e2e in chromium and firefox
         run: |
           sudo apt-get update -q
           sudo apt-get install -qy chromium-browser exiftool
           sudo ln -sf "$(command -v chromium-browser)" /usr/local/bin/chromium
+          firefox --version || { echo "firefox is missing, so the Firefox export suite cannot run"; exit 1; }
           node tools/gen-fixtures.mjs
           npm run e2e
 
