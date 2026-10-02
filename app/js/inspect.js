@@ -35,6 +35,17 @@ const HIGH_TAGS = new Set([
   "Windows author",
   "GPS area information",
   "GPS processing method",
+  "Photographer",
+  "Image editor",
+  "Host computer",
+  "Destination latitude ref",
+  "Destination latitude",
+  "Destination longitude ref",
+  "Destination longitude",
+  "Destination bearing ref",
+  "Destination bearing",
+  "Destination distance ref",
+  "Destination distance",
 ]);
 const MEDIUM_TAGS = new Set([
   "Camera make",
@@ -57,6 +68,13 @@ const MEDIUM_TAGS = new Set([
   "Windows comment",
   "Windows keywords",
   "Windows subject",
+  "Image title",
+  "Document name",
+  "Page name",
+  "Camera firmware",
+  "RAW developing software",
+  "Image editing software",
+  "Metadata editing software",
 ]);
 const HIGH_PNG_KEYWORDS = new Set(["author", "artist", "copyright", "source", "location"]);
 
@@ -71,12 +89,38 @@ function fmtValue(v) {
   return String(v).slice(0, 120);
 }
 
+// Unnamed tags holding text: ASCII with a letter in it, or BYTE/UNDEFINED that is all printable.
+function unnamedText(f) {
+  if (f.type === 2 && typeof f.value === "string") {
+    const s = f.value.trim();
+    return s.length >= 4 && /\p{L}/u.test(s) ? s : null;
+  }
+  if ((f.type === 1 || f.type === 7) && Array.isArray(f.value)) {
+    let end = f.value.length;
+    while (end > 0 && f.value[end - 1] === 0) end--;
+    if (end < 8 || !f.value.slice(0, end).every((b) => b >= 0x20 && b <= 0x7e)) return null;
+    return String.fromCharCode(...f.value.slice(0, end));
+  }
+  return null;
+}
+
 function pushExifItems(items, tiff, out) {
   let settings = 0;
   let unknown = 0;
   for (const f of tiff.fields) {
     const name = f.name;
     if (!name) {
+      const tag = `0x${f.tag.toString(16).padStart(4, "0")}`;
+      if (f.ifd === "gps") {
+        const text = fmtValue(f.value) || (f.oversized ? "present, too large to decode" : "");
+        items.push({ id: `exif:gps:${tag}`, severity: "high", label: "Unnamed GPS field", value: `${tag}: ${text}` });
+        continue;
+      }
+      const text = unnamedText(f);
+      if (text) {
+        items.push({ id: `exif:text:${f.ifd}:${tag}`, severity: "medium", label: "Unnamed text field", value: `${tag}: ${text.slice(0, 120)}` });
+        continue;
+      }
       unknown++;
       continue;
     }

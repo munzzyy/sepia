@@ -110,10 +110,10 @@ test("GPSAreaInformation, GPSProcessingMethod, XPAuthor, and MakerNote all surfa
   assert.equal(byId["exif:Windows author"]?.severity, "high");
   assert.ok(byId["exif:MakerNote"], "MakerNote has its own line, not folded into the low rollup");
   assert.notEqual(byId["exif:MakerNote"]?.severity, "low");
-  // A genuinely unmapped tag still falls into the honest low rollup; that
-  // path must survive the fix, not just the named tags.
-  const other = report.items.find((i) => i.id === "exif:other");
-  assert.ok(other, "unmapped tag still counted, not dropped");
+  // Text in a tag the table does not name gets its own line now.
+  const unnamed = report.items.find((i) => i.id === "exif:text:exif:0xc7b5");
+  assert.equal(unnamed?.value, "0xc7b5: unmapped tag text");
+  assert.equal(unnamed?.severity, "medium");
 });
 
 test("hostile input does not throw", async () => {

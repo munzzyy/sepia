@@ -1,10 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { writeFileSync, mkdtempSync, rmSync, copyFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { parseTiff, gpsToDecimal } from "../app/js/tiff.js";
+import { scanJpeg, exifPayload } from "../app/js/jpegscan.js";
 import {
   buildTiff,
   sampleExifSpec,
@@ -140,6 +141,74 @@ test("cross-check the identity-gap fields against exiftool", (t) => {
     assert.equal(meta.XPAuthor, "Jordan Sample");
     assert.equal(meta.GPSAreaInformation, "Paris, France");
     assert.equal(meta.GPSProcessingMethod, "GPS NETWORK");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("names the Exif 3.0 people fields, the host computer and GPS destination", () => {
+  const parsed = parseTiff(
+    buildTiff({
+      ifd0: [
+        { tag: 0x010d, type: 2, values: "scan.tif" },
+        { tag: 0x013c, type: 2, values: "JORDANS-LAPTOP" },
+      ],
+      exif: [
+        { tag: 0xa437, type: 2, values: "Jordan Sample" },
+        { tag: 0xa438, type: 2, values: "Sam Editor" },
+        { tag: 0x9000, type: 7, values: [0x30, 0x32, 0x33, 0x32] },
+      ],
+      gps: [
+        { tag: 0x0013, type: 2, values: "N" },
+        { tag: 0x0014, type: 5, values: [[48, 1], [51, 1], [3024, 100]] },
+      ],
+    }),
+  );
+  const byName = Object.fromEntries(parsed.fields.filter((f) => f.name).map((f) => [f.name, f.value]));
+  assert.equal(byName["Document name"], "scan.tif");
+  assert.equal(byName["Host computer"], "JORDANS-LAPTOP");
+  assert.equal(byName["Photographer"], "Jordan Sample");
+  assert.equal(byName["Image editor"], "Sam Editor");
+  assert.deepEqual(byName["Exif version"], [0x30, 0x32, 0x33, 0x32]);
+  assert.equal(byName["Destination latitude ref"], "N");
+  assert.ok(byName["Destination latitude"]);
+  assert.equal(parsed.fields.filter((f) => !f.name).length, 0);
+});
+
+test("every IFD0, ExifIFD and GPS tag exiftool writes for these fields has a name", (t) => {
+  let hasExiftool = true;
+  try {
+    execFileSync("exiftool", ["-ver"], { stdio: "pipe" });
+  } catch {
+    hasExiftool = false;
+  }
+  if (!hasExiftool) {
+    t.skip("exiftool not installed");
+    return;
+  }
+  const dir = mkdtempSync(path.join(tmpdir(), "sepia-tiff-names-"));
+  try {
+    const file = path.join(dir, "named.jpg");
+    copyFileSync(new URL("fixtures/clean.jpg", import.meta.url), file);
+    execFileSync("exiftool", [
+      "-q", "-overwrite_original",
+      "-Photographer=X", "-ImageEditor=X", "-ImageTitle=X", "-HostComputer=X", "-DocumentName=X",
+      "-GPSDestLatitude=48.8584", "-GPSDestLatitudeRef=N", "-GPSDestLongitude=2.2945", "-GPSDestLongitudeRef=E",
+      file,
+    ]);
+    const [meta] = JSON.parse(execFileSync("exiftool", ["-j", "-G1", "-D", file], { encoding: "utf8" }));
+    const groups = { IFD0: "0", ExifIFD: "exif", GPS: "gps" };
+    const listed = Object.entries(meta)
+      .filter(([k]) => k.split(":")[0] in groups)
+      .map(([k, v]) => ({ key: k, ifd: groups[k.split(":")[0]], tag: v.id }));
+    assert.ok(listed.length >= 10, JSON.stringify(listed));
+    const bytes = new Uint8Array(readFileSync(file));
+    const seg = scanJpeg(bytes).segments.find((s) => s.kind === "exif");
+    const fields = parseTiff(exifPayload(bytes, seg)).fields;
+    for (const { key, ifd, tag } of listed) {
+      const field = fields.find((f) => f.ifd === ifd && f.tag === tag);
+      assert.ok(field?.name, `${key} (${ifd}:0x${tag.toString(16)}) has no name`);
+    }
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
