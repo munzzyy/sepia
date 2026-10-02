@@ -121,11 +121,10 @@ since Firefox's encoder writes different bytes.
 
 The web app is plain files with no build step: serve `app/` from any
 static host, or `node test/serve_local.mjs` locally. Offline (the service
-worker) and installability both need an https origin serving `app/` at the
-domain root; the precache list is written as root-absolute paths, so a
-project site at a subpath (`example.com/sepia/`) will not go offline
-correctly yet. Plain use over http, or from a subpath, still works, it just
-won't cache. The Android wrapper (`cd android && ./gradlew assembleRelease`)
+worker) and installability need a secure origin, which means https, or
+localhost while you test. `app/` can sit at the domain root or under a
+subpath like `example.com/sepia/`. Plain http from anywhere else still
+works, it just won't cache. The Android wrapper (`cd android && ./gradlew assembleRelease`)
 syncs `app/` into its assets on every build, so the APK can't drift from the
 site.
 

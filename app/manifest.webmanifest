@@ -2,8 +2,8 @@
   "name": "Sepia",
   "short_name": "Sepia",
   "description": "Share images without oversharing. Metadata X-ray, real redaction, and proof the output is clean, all on your device.",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f4ead8",
   "theme_color": "#f4ead8",
@@ -13,7 +13,7 @@
     { "src": "icons/sepia.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ],
   "share_target": {
-    "action": "/share",
+    "action": "share",
     "method": "POST",
     "enctype": "multipart/form-data",
     "params": {
@@ -22,7 +22,7 @@
   },
   "file_handlers": [
     {
-      "action": "/",
+      "action": "./",
       "accept": {
         "image/jpeg": [".jpg", ".jpeg"],
         "image/png": [".png"],

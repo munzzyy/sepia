@@ -6,42 +6,46 @@
 const VERSION = "sepia-v0.5.1";
 const SHARE_CACHE = "sepia-share";
 
+// Every path is relative to the scope, so app/ works at a domain root or under a subpath.
+const SCOPE = self.registration.scope;
+const at = (path) => new URL(path, SCOPE);
+
 const PRECACHE = [
-  "/",
-  "/index.html",
-  "/css/app.css",
-  "/js/main.js",
-  "/js/ui.js",
-  "/js/canvasview.js",
-  "/js/editor.js",
-  "/js/render.js",
-  "/js/inspect.js",
-  "/js/jpegscan.js",
-  "/js/tiff.js",
-  "/js/pngscan.js",
-  "/js/webpscan.js",
-  "/js/bytes.js",
-  "/js/report.js",
-  "/js/verify.js",
-  "/js/names.js",
-  "/js/barcodes.js",
-  "/js/platform.js",
-  "/js/i18n.js",
-  "/js/strings-es.js",
-  "/icons/sepia.svg",
-  "/icons/favicon.svg",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
-  "/demo/sample.jpg",
-  "/privacy.html",
-  "/manifest.webmanifest"
+  "./",
+  "index.html",
+  "css/app.css",
+  "js/main.js",
+  "js/ui.js",
+  "js/canvasview.js",
+  "js/editor.js",
+  "js/render.js",
+  "js/inspect.js",
+  "js/jpegscan.js",
+  "js/tiff.js",
+  "js/pngscan.js",
+  "js/webpscan.js",
+  "js/bytes.js",
+  "js/report.js",
+  "js/verify.js",
+  "js/names.js",
+  "js/barcodes.js",
+  "js/platform.js",
+  "js/i18n.js",
+  "js/strings-es.js",
+  "icons/sepia.svg",
+  "icons/favicon.svg",
+  "icons/icon-192.png",
+  "icons/icon-512.png",
+  "demo/sample.jpg",
+  "privacy.html",
+  "manifest.webmanifest"
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(VERSION);
-      await cache.addAll(PRECACHE);
+      await cache.addAll(PRECACHE.map((p) => at(p).href));
     })()
   );
   self.skipWaiting();
@@ -62,7 +66,7 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  if (event.request.method === "POST" && url.pathname === "/share") {
+  if (event.request.method === "POST" && url.pathname === at("share").pathname) {
     event.respondWith(
       (async () => {
         // Only the OS share sheet ("none") or the app itself may plant a
@@ -81,14 +85,14 @@ self.addEventListener("fetch", (event) => {
           let n = 0;
           for (const file of files.slice(0, 50)) {
             await cache.put(
-              `/share-incoming-${n++}`,
+              at(`share-incoming-${n++}`).href,
               new Response(file, { headers: { "content-type": file.type || "image/*" } })
             );
           }
         } catch {
           // A malformed share still lands on the app, just with nothing open.
         }
-        return Response.redirect("/?share-target=1", 303);
+        return Response.redirect(at("./?share-target=1").href, 303);
       })()
     );
     return;
@@ -97,7 +101,7 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET" || url.origin !== self.location.origin) return;
 
   // The parked share file is for the app's one pickup, never a response.
-  if (url.pathname === "/share-incoming") {
+  if (url.pathname.startsWith(at("share-incoming").pathname)) {
     event.respondWith(new Response("gone", { status: 404 }));
     return;
   }
@@ -106,10 +110,10 @@ self.addEventListener("fetch", (event) => {
     // Only the app shell and the privacy page are served from cache; any
     // other navigation (the APK download, future pages) goes to network.
     const shell =
-      url.pathname === "/" || url.pathname === "/index.html"
-        ? "/index.html"
-        : url.pathname === "/privacy.html" || url.pathname === "/privacy"
-          ? "/privacy.html"
+      url.pathname === at("./").pathname || url.pathname === at("index.html").pathname
+        ? at("index.html").href
+        : url.pathname === at("privacy.html").pathname || url.pathname === at("privacy").pathname
+          ? at("privacy.html").href
           : null;
     if (shell) {
       event.respondWith(
@@ -128,7 +132,7 @@ self.addEventListener("fetch", (event) => {
       const cached = await caches.match(event.request, { cacheName: VERSION });
       if (cached) return cached;
       const res = await fetch(event.request);
-      if (res && res.ok && PRECACHE.includes(url.pathname)) {
+      if (res && res.ok && PRECACHE.some((p) => at(p).pathname === url.pathname)) {
         const cache = await caches.open(VERSION);
         cache.put(event.request, res.clone());
       }

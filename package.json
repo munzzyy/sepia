@@ -7,7 +7,7 @@
   "license": "GPL-3.0-or-later",
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "e2e": "node test/e2e_app.mjs && node test/e2e_wrapper.mjs && node test/e2e_batch.mjs && node test/e2e_firefox.mjs",
+    "e2e": "node test/e2e_app.mjs && node test/e2e_wrapper.mjs && node test/e2e_batch.mjs && node test/e2e_offline.mjs && node test/e2e_firefox.mjs",
     "check": "bash tools/check-clean.sh",
     "fixtures": "node tools/gen-fixtures.mjs"
   },

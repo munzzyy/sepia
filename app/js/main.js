@@ -788,7 +788,7 @@ async function boot() {
 
   if (isBundled()) {
     stripWebOnly();
-  } else if ("serviceWorker" in navigator && location.protocol === "https:") {
+  } else if ("serviceWorker" in navigator && window.isSecureContext) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
   fitHintToDevice();
@@ -848,7 +848,8 @@ async function boot() {
       const cache = await caches.open("sepia-share");
       const isPickup = new URLSearchParams(location.search).has("share-target");
       const keys = await cache.keys();
-      const parked = keys.filter((req) => new URL(req.url).pathname.startsWith("/share-incoming"));
+      const parkedAt = new URL("share-incoming", document.baseURI).pathname;
+      const parked = keys.filter((req) => new URL(req.url).pathname.startsWith(parkedAt));
       const files = [];
       for (const req of parked) {
         if (isPickup) {

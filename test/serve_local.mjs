@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "app");
 const PORT = Number(process.argv[2] || 8940);
+// Optional mount point, e.g. /sepia/, to serve app/ the way a project site would.
+const MOUNT = (process.argv[3] || "/").replace(/\/?$/, "/");
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -24,7 +26,6 @@ createServer(async (req, res) => {
   try {
     const url = new URL(req.url, "http://localhost");
     let file = decodeURIComponent(url.pathname);
-    if (file === "/") file = "/index.html";
     // Test stand-in for the wrapper's share hand-off origin path.
     if (file.startsWith("/shared/")) {
       const body = await readFile(path.join(ROOT, "..", "test", "fixtures", "real-gps.jpg"));
@@ -32,6 +33,9 @@ createServer(async (req, res) => {
       res.end(body);
       return;
     }
+    if (!file.startsWith(MOUNT)) throw new Error("outside the mount");
+    file = "/" + file.slice(MOUNT.length);
+    if (file === "/") file = "/index.html";
     const full = path.join(ROOT, file);
     if (!full.startsWith(ROOT)) throw new Error("traversal");
     const body = await readFile(full);
@@ -44,5 +48,5 @@ createServer(async (req, res) => {
     res.writeHead(404).end("not found");
   }
 }).listen(PORT, "127.0.0.1", () => {
-  console.log(`sepia dev server on http://127.0.0.1:${PORT}`);
+  console.log(`sepia dev server on http://127.0.0.1:${PORT}${MOUNT}`);
 });
