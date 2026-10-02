@@ -22,6 +22,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.webkit.WebViewAssetLoader
 import java.security.SecureRandom
+import java.util.ArrayDeque
 
 // One screen: the bundled web app in a WebView on the fixed asset origin.
 // The APK carries no INTERNET permission, so the only bytes this WebView can
@@ -67,29 +68,41 @@ class MainActivity : ComponentActivity() {
         return WebChromeClient.FileChooserParams.parseResult(resultCode, data)
     }
 
-    // Android 9 has no MediaStore write without a storage permission, so a save goes through the system picker there.
-    private var pendingSave: ByteArray? = null
+    // Android 9 has no MediaStore write without a storage permission, so saves queue for the system picker, one at a time.
+    private class PendingSave(val bytes: ByteArray, val mime: String, val name: String)
+
+    private val pendingSaves = ArrayDeque<PendingSave>()
+    private var pickerOpen = false
 
     private val createDocument = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        val bytes = pendingSave
-        pendingSave = null
+        pickerOpen = false
+        val save = pendingSaves.pollFirst()
         val uri = result.data?.data
-        if (result.resultCode != RESULT_OK || uri == null || bytes == null) return@registerForActivityResult
-        val ok = runCatching { contentResolver.openOutputStream(uri)?.use { it.write(bytes) } != null }.getOrDefault(false)
-        Toast.makeText(this, getString(if (ok) R.string.saved else R.string.save_failed), Toast.LENGTH_SHORT).show()
+        if (save != null && result.resultCode == RESULT_OK && uri != null) {
+            val ok = runCatching { contentResolver.openOutputStream(uri)?.use { it.write(save.bytes) } != null }.getOrDefault(false)
+            Toast.makeText(this, getString(if (ok) R.string.saved else R.string.save_failed), Toast.LENGTH_SHORT).show()
+        }
+        openNextSavePicker()
     }
 
     fun saveWithPicker(bytes: ByteArray, mime: String, name: String) {
-        pendingSave = bytes
+        pendingSaves.addLast(PendingSave(bytes, mime, name))
+        openNextSavePicker()
+    }
+
+    private fun openNextSavePicker() {
+        if (pickerOpen) return
+        val next = pendingSaves.peekFirst() ?: return
         val pick = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
-            type = mime
-            putExtra(Intent.EXTRA_TITLE, name)
+            type = next.mime
+            putExtra(Intent.EXTRA_TITLE, next.name)
         }
         try {
             createDocument.launch(pick)
+            pickerOpen = true
         } catch (e: ActivityNotFoundException) {
-            pendingSave = null
+            pendingSaves.clear()
             Toast.makeText(this, getString(R.string.save_failed), Toast.LENGTH_SHORT).show()
         }
     }

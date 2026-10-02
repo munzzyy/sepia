@@ -62,6 +62,14 @@ test("a multi-select in the picker reaches the page", () => {
   assert.match(src, /\.filter \{ it\.scheme == "content" \}\s*\.take\(50\)/);
 });
 
+test("Save all on Android 9 queues its pickers instead of sharing one slot", () => {
+  const src = read(KT + "MainActivity.kt");
+  assert.doesNotMatch(src, /pendingSave: ByteArray\?/);
+  assert.match(src, /import java\.util\.ArrayDeque/);
+  assert.match(src, /pendingSaves\.addLast\(PendingSave\(bytes, mime, name\)\)\s*openNextSavePicker\(\)/);
+  assert.match(src, /if \(pickerOpen\) return/);
+});
+
 test("the wrapper names the WebView build that crashes on BarcodeDetector", () => {
   assert.match(read(KT + "SepiaBridge.kt"), /fun codesSafe\(\): Boolean = WebView\.getCurrentWebViewPackage\(\)\?\.packageName != "com\.android\.webview"/);
 });
