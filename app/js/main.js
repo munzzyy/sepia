@@ -233,6 +233,13 @@ async function readEntryBytes(entry) {
   return { bytes: new Uint8Array(await res.arrayBuffer()), name: "", mime: res.headers.get("content-type") || "" };
 }
 
+// JPEG has no alpha channel: a transparent WebP encoded as JPEG turns every clear pixel black.
+const keepsAlpha = (report) => report.format === "webp" && !!report.alpha;
+
+function defaultType(report) {
+  return keepsAlpha(report) || ["png", "gif", "bmp"].includes(report.format) ? "image/png" : "image/jpeg";
+}
+
 // Save, Share and Copy get a blob rebuilt from the filtered bytes, so what leaves is what was verified.
 async function encodeOutput(canvas, type, quality) {
   const raw = await encode(canvas, type, type === "image/jpeg" ? quality : undefined);
@@ -269,8 +276,7 @@ async function scrubOne(entry, index) {
   }
   try {
     const editor = createEditor(bitmap.width, bitmap.height);
-    const srcIsPng = report.format === "png" || report.format === "gif" || report.format === "bmp";
-    const type = srcIsPng ? "image/png" : "image/jpeg";
+    const type = defaultType(report);
     const canvas = bake(bitmap, editor);
     const { blob, bytes: outBytes } = await encodeOutput(canvas, type, 0.9);
     const verify = await verifyClean(outBytes);
@@ -427,8 +433,7 @@ function setTool(next) {
 
 async function runExport() {
   if (!session) return;
-  const srcIsPng = session.report.format === "png" || session.report.format === "gif" || session.report.format === "bmp";
-  const type = session.exported?.type || lastFormat || (srcIsPng ? "image/png" : "image/jpeg");
+  const type = session.exported?.type || (keepsAlpha(session.report) ? "image/png" : lastFormat) || defaultType(session.report);
   if (await reExport(type, Number($("q-slider").value) / 100)) {
     showScreen("done");
     announce($("done-title").textContent);

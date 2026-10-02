@@ -455,6 +455,7 @@ async function inspectWebp(bytes, out) {
     out.ok = false;
     return;
   }
+  out.alpha = scan.alpha;
   let unknown = 0;
   let unknownBytes = 0;
   for (const chunk of scan.chunks) {

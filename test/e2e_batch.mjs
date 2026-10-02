@@ -238,6 +238,45 @@ async function main() {
     check("copy: clicking never throws, success or failure both toast", errsAfterCopy.length === 0, JSON.stringify(errsAfterCopy));
     await shot(c, "07-proof-copy.png");
 
+    // ------------------------------------------------- transparent webp
+    // Built in the page, nothing on disk: left half white, right half fully transparent.
+    await c.evalJs(`document.getElementById('btn-again').click(); 'ok'`);
+    await waitFor(() => c.evalJs("__sepiaApi.state.screen === 'start'"), "back to start for webp");
+    const WEBP = `(async () => { const cv = new OffscreenCanvas(16, 16); const ctx = cv.getContext("2d");
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 8, 16);
+      return cv.convertToBlob({ type: "image/webp" }); })()`;
+    const PROBE = (blob) => `(async () => { const bmp = await createImageBitmap(${blob});
+      const cv = new OffscreenCanvas(bmp.width, bmp.height); const ctx = cv.getContext("2d"); ctx.drawImage(bmp, 0, 0);
+      return { type: ${blob}.type, opaque: Array.from(ctx.getImageData(3, 8, 1, 1).data), clear: Array.from(ctx.getImageData(13, 8, 1, 1).data) }; })()`;
+    await c.evalJs(
+      `(async () => { const dt = new DataTransfer();
+        dt.items.add(new File([await ${WEBP}], "clear.webp", { type: "image/webp" }));
+        dt.items.add(new File([await (await fetch("/shared/x")).blob()], "photo.jpg", { type: "image/jpeg" }));
+        const input = document.getElementById("file-input"); input.files = dt.files;
+        input.dispatchEvent(new Event("change")); })()`,
+      true,
+    );
+    await waitFor(() => c.evalJs("__sepiaApi.state.screen === 'triage'"), "webp triage");
+    await c.evalJs(`document.getElementById('btn-scrub-all').click(); 'ok'`);
+    await waitFor(() => c.evalJs("__sepiaApi.state.screen === 'batch'"), "webp batch done", 30000);
+    const batchWebp = await c.evalJs(PROBE("__sepiaBatchResults[0].blob"), true);
+    check("webp batch: a transparent WebP comes out as PNG", batchWebp.type === "image/png", batchWebp.type);
+    check("webp batch: the clear half stays clear", batchWebp.clear[3] === 0, JSON.stringify(batchWebp));
+    check("webp batch: the white half stays white", batchWebp.opaque.join() === "255,255,255,255", JSON.stringify(batchWebp));
+    check("webp batch: the JPEG next to it stays JPEG", (await c.evalJs("__sepiaBatchResults[1].type")) === "image/jpeg");
+    await c.evalJs(`document.getElementById('btn-batch-again').click(); 'ok'`);
+    await waitFor(() => c.evalJs("__sepiaApi.state.screen === 'start'"), "back to start for single webp");
+    await c.evalJs(
+      `(async () => { const b = new Uint8Array(await (await ${WEBP}).arrayBuffer()); await __sepiaApi.openBytes(b, "clear.webp", "image/webp"); })()`,
+      true,
+    );
+    await waitFor(() => c.evalJs("__sepiaApi.state.screen === 'edit'"), "single webp open");
+    await c.evalJs(`document.getElementById('btn-export').click(); 'ok'`);
+    await waitFor(() => c.evalJs("__sepiaApi.state.screen === 'done' && !!__sepiaApi.session().exported"), "single webp export");
+    const singleWebp = await c.evalJs(PROBE("__sepiaApi.session().exported.blob"), true);
+    check("webp single: exports as PNG even right after a JPEG export", singleWebp.type === "image/png", singleWebp.type);
+    check("webp single: the clear half stays clear", singleWebp.clear[3] === 0, JSON.stringify(singleWebp));
+
     const finalErrs = await c.evalJs("(__sepiaErrors || []).slice(0, 8)");
     check("no page errors across the batch run", finalErrs.length === 0, JSON.stringify(finalErrs));
 

@@ -22,7 +22,11 @@ export function scanWebp(bytes) {
     i += 8 + len + (len % 2);
   }
   const trailer = end < bytes.length ? { off: end, len: bytes.length - end } : null;
-  return { ok: true, chunks, trailer, incomplete: broke };
+  // Transparency shows as the VP8X alpha flag, an ALPH chunk, or a lossless VP8L image.
+  const alpha = chunks.some(
+    (c) => (c.type === "VP8X" && c.payloadLen > 0 && (bytes[c.payloadOff] & 0x10) !== 0) || c.type === "ALPH" || c.type === "VP8L",
+  );
+  return { ok: true, chunks, trailer, incomplete: broke, alpha };
 }
 
 // The EXIF chunk payload is TIFF, sometimes with a stray "Exif\0\0" prefix.
