@@ -27,3 +27,12 @@ export function severityWord(severity) {
   if (severity === "medium") return t("revealing");
   return t("harmless");
 }
+
+// Labels and computed values are English catalog keys; raw data in vars stays as it came.
+function localVars(vars) {
+  if (!vars) return undefined;
+  return Object.fromEntries(Object.entries(vars).map(([k, v]) => [k, Array.isArray(v) ? v.map((w) => t(w)).join(", ") : v]));
+}
+
+export const itemLabel = (item) => t(item.labelT || item.label, localVars(item.vars));
+export const itemValue = (item) => (item.valueT ? t(item.valueT, localVars(item.vars)) : item.value);

@@ -2,7 +2,7 @@
 // toasts, and live-region announcements.
 
 import { t } from "./i18n.js";
-import { headline, gpsWords, severityWord } from "./report.js";
+import { headline, gpsWords, severityWord, itemLabel, itemValue } from "./report.js";
 import { paintOps } from "./editor.js";
 
 function paintOpsSplit(editor) {
@@ -114,12 +114,11 @@ export function renderXray(report, actions) {
     const body = document.createElement("div");
     const label = document.createElement("span");
     label.className = "xray-label";
-    // Labels and details are a closed set of English strings; translating
-    // at render time keeps the parser layer free of UI concerns.
-    label.textContent = t(item.label) + ": ";
+    // Translated at render time; the parser layer stays free of UI concerns.
+    label.textContent = itemLabel(item) + ": ";
     const value = document.createElement("span");
     value.className = "xray-value";
-    value.textContent = item.value;
+    value.textContent = itemValue(item);
     body.append(label, value);
     if (item.detail) {
       const detail = document.createElement("span");
@@ -297,10 +296,10 @@ export function renderProof({ report, editor, verify, blob, name, origName }) {
     const li = document.createElement("li");
     const details = document.createElement("details");
     const summary = document.createElement("summary");
-    summary.textContent = t("{label}: removed", { label: t(item.label) });
+    summary.textContent = t("{label}: removed", { label: itemLabel(item) });
     const value = document.createElement("span");
     value.className = "done-secret";
-    value.textContent = item.value;
+    value.textContent = itemValue(item);
     details.append(summary, value);
     li.append(details);
     removed.append(li);
@@ -331,7 +330,7 @@ export function renderProof({ report, editor, verify, blob, name, origName }) {
     ul.textContent = "";
     for (const item of verify.leftovers) {
       const li = document.createElement("li");
-      li.textContent = `${item.label}: ${item.value}`;
+      li.textContent = `${itemLabel(item)}: ${itemValue(item)}`;
       ul.append(li);
     }
   }

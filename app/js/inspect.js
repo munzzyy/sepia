@@ -5,7 +5,7 @@
 // to prove the scrub worked, so it must be honest in both directions.
 
 import { startsWith, sigBytes, utf8, inflate, asciiZ } from "./bytes.js";
-import { scanJpeg, exifPayload, xmpPayload, sniffTrailer } from "./jpegscan.js";
+import { scanJpeg, exifPayload, xmpPayload, sniffTrailer, TRAILER_KINDS } from "./jpegscan.js";
 import { parseTiff, gpsToDecimal } from "./tiff.js";
 import { scanPng, pngText, PNG_BENIGN } from "./pngscan.js";
 import { scanWebp, webpExifPayload } from "./webpscan.js";
@@ -25,7 +25,7 @@ export function sniffFormat(bytes) {
   return "unknown";
 }
 
-const HIGH_TAGS = new Set([
+export const HIGH_TAGS = new Set([
   "Artist",
   "Owner name",
   "Body serial number",
@@ -47,7 +47,7 @@ const HIGH_TAGS = new Set([
   "Destination distance ref",
   "Destination distance",
 ]);
-const MEDIUM_TAGS = new Set([
+export const MEDIUM_TAGS = new Set([
   "Camera make",
   "Camera model",
   "Software",
@@ -77,6 +77,13 @@ const MEDIUM_TAGS = new Set([
   "Metadata editing software",
 ]);
 const HIGH_PNG_KEYWORDS = new Set(["author", "artist", "copyright", "source", "location"]);
+
+// A computed value the UI translates; vars carry raw data, and arrays in vars are words to translate.
+function tv(template, vars) {
+  if (!vars) return { value: template, valueT: template };
+  const value = template.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? [].concat(vars[k]).join(", ") : m));
+  return { value, valueT: template, vars };
+}
 
 function fmtValue(v) {
   if (v === null || v === undefined) return "";
@@ -112,8 +119,9 @@ function pushExifItems(items, tiff, out) {
     if (!name) {
       const tag = `0x${f.tag.toString(16).padStart(4, "0")}`;
       if (f.ifd === "gps") {
-        const text = fmtValue(f.value) || (f.oversized ? "present, too large to decode" : "");
-        items.push({ id: `exif:gps:${tag}`, severity: "high", label: "Unnamed GPS field", value: `${tag}: ${text}` });
+        const text = fmtValue(f.value);
+        const value = text ? { value: `${tag}: ${text}` } : tv("{tag}: present, too large to decode", { tag });
+        items.push({ id: `exif:gps:${tag}`, severity: "high", label: "Unnamed GPS field", ...value });
         continue;
       }
       const text = unnamedText(f);
@@ -126,8 +134,9 @@ function pushExifItems(items, tiff, out) {
     }
     const severity = HIGH_TAGS.has(name) ? "high" : MEDIUM_TAGS.has(name) ? "medium" : null;
     if (severity) {
-      const text = fmtValue(f.value) || (f.oversized ? "present, too large to decode" : "");
+      const text = fmtValue(f.value);
       if (text) items.push({ id: `exif:${name}`, severity, label: name, value: text });
+      else if (f.oversized) items.push({ id: `exif:${name}`, severity, label: name, ...tv("present, too large to decode") });
       continue;
     }
     settings++;
@@ -137,7 +146,7 @@ function pushExifItems(items, tiff, out) {
       id: "exif:settings",
       severity: "low",
       label: "Camera settings",
-      value: `${settings} technical fields`,
+      ...tv("{count} technical fields", { count: settings }),
     });
   }
   if (unknown) {
@@ -145,18 +154,18 @@ function pushExifItems(items, tiff, out) {
       id: "exif:other",
       severity: "low",
       label: "Other Exif fields",
-      value: `${unknown} maker or unknown fields`,
+      ...tv("{count} maker or unknown fields", { count: unknown }),
     });
   }
   const gps = gpsToDecimal(tiff.fields);
   if (gps) {
     out.gps = gps;
-    const alt = gps.altitude !== null ? `, ${Math.round(gps.altitude)} m altitude` : "";
+    const coords = `${gps.latitude.toFixed(5)}, ${gps.longitude.toFixed(5)}`;
     items.unshift({
       id: "gps",
       severity: "high",
       label: "Location",
-      value: `${gps.latitude.toFixed(5)}, ${gps.longitude.toFixed(5)}${alt}`,
+      ...(gps.altitude !== null ? tv("{coords}, {alt} m altitude", { coords, alt: Math.round(gps.altitude) }) : { value: coords }),
       detail: "Exact coordinates of where this image was taken.",
     });
   } else if (tiff.fields.some((f) => f.ifd === "gps" && f.tag >= 1 && f.tag <= 6)) {
@@ -164,7 +173,7 @@ function pushExifItems(items, tiff, out) {
       id: "gps-partial",
       severity: "high",
       label: "Location fields",
-      value: "GPS data present but not fully readable",
+      ...tv("GPS data present but not fully readable"),
     });
   }
   if (tiff.thumbnail) {
@@ -173,7 +182,7 @@ function pushExifItems(items, tiff, out) {
       id: "thumbnail",
       severity: "high",
       label: "Hidden preview image",
-      value: `${tiff.thumbnail.length.toLocaleString()} bytes`,
+      ...tv("{bytes} bytes", { bytes: tiff.thumbnail.length.toLocaleString() }),
       detail:
         "A second, smaller copy of the photo stored inside the file. Croppings and edits sometimes leave the original preview behind.",
     });
@@ -183,7 +192,7 @@ function pushExifItems(items, tiff, out) {
       id: "exif:truncated",
       severity: "medium",
       label: "Exif field list truncated",
-      value: "more fields exist than could be read",
+      ...tv("more fields exist than could be read"),
     });
   }
 }
@@ -191,14 +200,14 @@ function pushExifItems(items, tiff, out) {
 // A block that parses to nothing still carries bytes; it must not read as clean.
 function exifItems(items, tiff, out) {
   if (tiff.ok && (tiff.fields.length || tiff.thumbnail)) pushExifItems(items, tiff, out);
-  else items.push({ id: "exif:unreadable", severity: "medium", label: "Exif block", value: "present but unreadable" });
+  else items.push({ id: "exif:unreadable", severity: "medium", label: "Exif block", ...tv("present but unreadable") });
 }
 
 const ACSP = sigBytes("acsp");
 const iccItem = (ok) =>
   ok
-    ? { id: "icc", severity: "low", label: "Color profile", value: "ICC profile" }
-    : { id: "icc:invalid", severity: "medium", label: "Color profile", value: "not a valid ICC profile" };
+    ? { id: "icc", severity: "low", label: "Color profile", ...tv("ICC profile") }
+    : { id: "icc:invalid", severity: "medium", label: "Color profile", ...tv("not a valid ICC profile") };
 
 // PNG and WebP allow one profile, so a second chunk turns the line medium.
 function pushChunkIcc(items, seen, ok) {
@@ -235,18 +244,21 @@ async function pngIccValid(bytes, chunk) {
   return !!profile && startsWith(profile, 36, ACSP);
 }
 
+export const XMP_HITS = [
+  ["location", /GPS(Latitude|Longitude|Position)/i],
+  ["creator identity", /dc:creator|photoshop:Credit|xmp:Author/i],
+  ["dates", /CreateDate|DateTimeOriginal|ModifyDate/i],
+  ["editing software", /CreatorTool|xmp:Agent/i],
+];
+
 function xmpItem(items, text) {
   if (!text) return;
-  const hits = [];
-  if (/GPS(Latitude|Longitude|Position)/i.test(text)) hits.push("location");
-  if (/dc:creator|photoshop:Credit|xmp:Author/i.test(text)) hits.push("creator identity");
-  if (/CreateDate|DateTimeOriginal|ModifyDate/i.test(text)) hits.push("dates");
-  if (/CreatorTool|xmp:Agent/i.test(text)) hits.push("editing software");
+  const hits = XMP_HITS.filter(([, re]) => re.test(text)).map(([word]) => word);
   items.push({
     id: "xmp",
     severity: hits.includes("location") || hits.includes("creator identity") ? "high" : "medium",
     label: "XMP metadata",
-    value: hits.length ? `contains ${hits.join(", ")}` : "editing history block",
+    ...(hits.length ? tv("contains {what}", { what: hits }) : tv("editing history block")),
   });
 }
 
@@ -268,21 +280,21 @@ async function inspectJpeg(bytes, out) {
         xmpItem(items, utf8(bytes, seg.payloadOff, Math.min(seg.payloadLen, 65536)));
         break;
       case "xmp-ext":
-        items.push({ id: "xmp-ext", severity: "medium", label: "Extended XMP", value: `${seg.payloadLen.toLocaleString()} bytes` });
+        items.push({ id: "xmp-ext", severity: "medium", label: "Extended XMP", ...tv("{bytes} bytes", { bytes: seg.payloadLen.toLocaleString() }) });
         break;
       case "iptc":
         items.push({
           id: "iptc",
           severity: "high",
           label: "IPTC metadata",
-          value: `${seg.payloadLen.toLocaleString()} bytes`,
+          ...tv("{bytes} bytes", { bytes: seg.payloadLen.toLocaleString() }),
           detail: "News-style metadata: often creator name, captions, and locations.",
         });
         break;
       case "icc":
         break;
       case "mpf":
-        items.push({ id: "mpf", severity: "medium", label: "Multi-picture data", value: "extra embedded images likely" });
+        items.push({ id: "mpf", severity: "medium", label: "Multi-picture data", ...tv("extra embedded images likely") });
         break;
       case "comment": {
         const text = (utf8(bytes, seg.payloadOff, Math.min(seg.payloadLen, 512)) || "").trim();
@@ -295,16 +307,16 @@ async function inspectJpeg(bytes, out) {
             id: "comment",
             severity: "medium",
             label: "Comment",
-            value: `${seg.payloadLen.toLocaleString()} bytes, not readable text`,
+            ...tv("{bytes} bytes, not readable text", { bytes: seg.payloadLen.toLocaleString() }),
           });
         }
         break;
       }
       case "jfif":
-        items.push({ id: "jfif", severity: "low", label: "JFIF header", value: "standard" });
+        items.push({ id: "jfif", severity: "low", label: "JFIF header", ...tv("standard") });
         break;
       case "adobe":
-        items.push({ id: "adobe", severity: "low", label: "Adobe encoder marker", value: "standard" });
+        items.push({ id: "adobe", severity: "low", label: "Adobe encoder marker", ...tv("standard") });
         break;
       case "app":
         // Vendor blocks (Samsung SEF and friends) carry real data; an
@@ -322,7 +334,7 @@ async function inspectJpeg(bytes, out) {
       id: "app-unknown",
       severity: "medium",
       label: "Unrecognized data blocks",
-      value: `${unknownApp} segment(s), ${unknownAppBytes.toLocaleString()} bytes`,
+      ...tv("{count} segment(s), {bytes} bytes", { count: unknownApp, bytes: unknownAppBytes.toLocaleString() }),
       detail: "Vendor-specific data this X-ray cannot itemize. Re-encoding removes it all the same.",
     });
   }
@@ -331,7 +343,7 @@ async function inspectJpeg(bytes, out) {
       id: "stray",
       severity: "high",
       label: "Stray data between segments",
-      value: `${scan.stray.toLocaleString()} bytes outside any marker`,
+      ...tv("{bytes} bytes outside any marker", { bytes: scan.stray.toLocaleString() }),
       detail: "Bytes hidden between the image's structural blocks. Re-encoding removes them.",
     });
   }
@@ -341,7 +353,7 @@ async function inspectJpeg(bytes, out) {
       id: "incomplete",
       severity: "high",
       label: "File structure unreadable",
-      value: "the scan could not reach the end of the image",
+      ...tv("the scan could not reach the end of the image"),
       detail: "Treat the report above as a minimum, not a full accounting.",
     });
   }
@@ -351,7 +363,7 @@ async function inspectJpeg(bytes, out) {
       id: "trailer",
       severity: "high",
       label: "Data after the image ends",
-      value: `${scan.trailer.len.toLocaleString()} bytes of ${out.trailer.kind}`,
+      ...tv("{bytes} bytes of {kind}", { bytes: scan.trailer.len.toLocaleString(), kind: [out.trailer.kind] }),
       detail:
         "Phones in motion-photo mode append a short video clip here. Anything after the image marker travels with the file, invisible in every viewer.",
     });
@@ -380,7 +392,7 @@ async function inspectPng(bytes, out) {
       id: "chunk-unknown",
       severity: "medium",
       label: "Unrecognized data blocks",
-      value: `${unknown} chunk(s), ${unknownBytes.toLocaleString()} bytes`,
+      ...tv("{count} chunk(s), {bytes} bytes", { count: unknown, bytes: unknownBytes.toLocaleString() }),
       detail: "Nonstandard data this X-ray cannot itemize. Re-encoding removes it all the same.",
     });
   }
@@ -396,17 +408,20 @@ async function inspectPng(bytes, out) {
       }
       const lower = kw.toLowerCase();
       const severity = HIGH_PNG_KEYWORDS.has(lower) ? "high" : "medium";
+      const text = (decoded.text || "").slice(0, 120);
       items.push({
         id: `png-text:${kw}`,
         severity,
         label: `Text: ${kw}`,
-        value: (decoded.text || "").slice(0, 120) || "(empty)",
-        detail: lower === "parameters" ? "AI generation prompt and settings." : undefined,
+        labelT: "Text: {keyword}",
+        ...(text ? { value: text } : tv("(empty)")),
+        vars: { keyword: kw },
+        ...(lower === "parameters" ? { detail: "AI generation prompt and settings." } : {}),
       });
     } else if (chunk.type === "eXIf") {
       exifItems(items, parseTiff(bytes.subarray(chunk.payloadOff, chunk.payloadOff + chunk.payloadLen)), out);
     } else if (chunk.type === "tIME") {
-      items.push({ id: "png-time", severity: "medium", label: "Last modified", value: "timestamp chunk" });
+      items.push({ id: "png-time", severity: "medium", label: "Last modified", ...tv("timestamp chunk") });
     } else if (chunk.type === "iCCP") {
       pushChunkIcc(items, icc, await pngIccValid(bytes, chunk));
     }
@@ -417,16 +432,16 @@ async function inspectPng(bytes, out) {
       id: "incomplete",
       severity: "high",
       label: "File structure unreadable",
-      value: "the scan could not reach the end of the image",
+      ...tv("the scan could not reach the end of the image"),
     });
   }
   if (scan.trailer) {
-    out.trailer = { len: scan.trailer.len, kind: "unidentified data" };
+    out.trailer = { len: scan.trailer.len, kind: TRAILER_KINDS.unknown };
     items.unshift({
       id: "trailer",
       severity: "high",
       label: "Data after the image ends",
-      value: `${scan.trailer.len.toLocaleString()} bytes appended`,
+      ...tv("{bytes} bytes appended", { bytes: scan.trailer.len.toLocaleString() }),
     });
   }
 }
@@ -453,7 +468,7 @@ async function inspectWebp(bytes, out) {
       id: "chunk-unknown",
       severity: "medium",
       label: "Unrecognized data blocks",
-      value: `${unknown} chunk(s), ${unknownBytes.toLocaleString()} bytes`,
+      ...tv("{count} chunk(s), {bytes} bytes", { count: unknown, bytes: unknownBytes.toLocaleString() }),
       detail: "Nonstandard data this X-ray cannot itemize. Re-encoding removes it all the same.",
     });
   }
@@ -473,16 +488,16 @@ async function inspectWebp(bytes, out) {
       id: "incomplete",
       severity: "high",
       label: "File structure unreadable",
-      value: "the scan could not reach the end of the image",
+      ...tv("the scan could not reach the end of the image"),
     });
   }
   if (scan.trailer) {
-    out.trailer = { len: scan.trailer.len, kind: "unidentified data" };
+    out.trailer = { len: scan.trailer.len, kind: TRAILER_KINDS.unknown };
     out.items.unshift({
       id: "trailer",
       severity: "high",
       label: "Data after the image ends",
-      value: `${scan.trailer.len.toLocaleString()} bytes appended`,
+      ...tv("{bytes} bytes appended", { bytes: scan.trailer.len.toLocaleString() }),
     });
   }
 }
@@ -501,7 +516,7 @@ function inspectIsobmff(bytes, out) {
         id,
         severity: "high",
         label,
-        value: "present (not itemized for this format)",
+        ...tv("present (not itemized for this format)"),
       });
       break;
     }

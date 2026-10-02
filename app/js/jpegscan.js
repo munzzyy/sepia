@@ -141,11 +141,18 @@ export function xmpPayload(bytes, segment) {
   return bytes.subarray(segment.payloadOff + SIG_XMP.length, segment.payloadOff + segment.payloadLen);
 }
 
+export const TRAILER_KINDS = {
+  jpeg: "embedded JPEG",
+  video: "embedded video (motion photo)",
+  zip: "embedded ZIP archive",
+  unknown: "unidentified data",
+};
+
 // A short sniff of what a trailer most likely is, for the report.
 export function sniffTrailer(bytes, trailer) {
   const head = ascii(bytes, trailer.off, Math.min(16, trailer.len)) || "";
-  if (head.startsWith("\xff\xd8")) return "embedded JPEG";
-  if (head.includes("ftyp")) return "embedded video (motion photo)";
-  if (head.startsWith("PK")) return "embedded ZIP archive";
-  return "unidentified data";
+  if (head.startsWith("\xff\xd8")) return TRAILER_KINDS.jpeg;
+  if (head.includes("ftyp")) return TRAILER_KINDS.video;
+  if (head.startsWith("PK")) return TRAILER_KINDS.zip;
+  return TRAILER_KINDS.unknown;
 }

@@ -183,6 +183,14 @@ async function main() {
     }))()`);
     check("es: document language follows the system", esState.lang === "es", esState.lang);
     check("es: the start screen speaks Spanish", esState.tagline === "Comparte imágenes sin compartir de más.", esState.tagline);
+    await es.evalJs("document.getElementById('btn-demo').click(); 'ok'");
+    await waitFor(() => es.evalJs("__sepiaApi.state.screen === 'edit'"), "es demo open");
+    const xray = await es.evalJs("document.getElementById('xray-list').textContent");
+    const english = ["technical fields", "ICC profile", "standard", "bytes of", "embedded video", "m altitude", "contains", "creator identity", "editing software"];
+    const leaked = english.filter((w) => xray.includes(w));
+    check("es: no English values left in the X-ray", leaked.length === 0, JSON.stringify(leaked));
+    check("es: computed values are in Spanish", xray.includes("11 campos técnicos") && xray.includes("m de altitud"), xray.slice(0, 300));
+    check("es: raw data stays as it is", xray.includes("Jordan Sample"));
     check("es: console clean", esState.errs.length === 0, JSON.stringify(esState.errs));
     es.close();
   } finally {

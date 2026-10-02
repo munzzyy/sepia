@@ -50,88 +50,23 @@ for (const file of readdirSync(jsDir)) {
   }
 }
 
-// X-ray item labels and details are assembled dynamically in inspect.js and
-// translated at render time, so the t("...") scan cannot see them. Kept as
-// an explicit list; ui.js renderXray/renderProof route each through t().
-const XRAY_STRINGS = [
-  "Location",
-  "Location fields",
-  "Hidden preview image",
-  "Data after the image ends",
-  "IPTC metadata",
-  "XMP metadata",
-  "Extended XMP",
-  "Multi-picture data",
-  "Comment",
-  "JFIF header",
-  "Adobe encoder marker",
-  "Color profile",
-  "Camera settings",
-  "Other Exif fields",
-  "Exif block",
-  "Exif data",
-  "Unrecognized data blocks",
-  "File structure unreadable",
-  "Exif field list truncated",
-  "Last modified",
-  "Camera make",
-  "Camera model",
-  "Software",
-  "Modified",
-  "Taken",
-  "Digitized",
-  "Artist",
-  "Copyright",
-  "Description",
-  "Owner name",
-  "Body serial number",
-  "Lens serial number",
-  "Lens make",
-  "Lens model",
-  "Lens specification",
-  "Image unique ID",
-  "User comment",
-  "Time zone",
-  "Time zone (original)",
-  "GPS date",
-  "GPS time",
-  "GPS area information",
-  "GPS processing method",
-  "MakerNote",
-  "Windows title",
-  "Windows comment",
-  "Windows author",
-  "Windows keywords",
-  "Windows subject",
-  "Photographer",
-  "Image editor",
-  "Host computer",
-  "Image title",
-  "Document name",
-  "Page name",
-  "Camera firmware",
-  "RAW developing software",
-  "Image editing software",
-  "Metadata editing software",
-  "Destination latitude ref",
-  "Destination latitude",
-  "Destination longitude ref",
-  "Destination longitude",
-  "Destination bearing ref",
-  "Destination bearing",
-  "Destination distance ref",
-  "Destination distance",
-  "Unnamed GPS field",
-  "Unnamed text field",
-  "Exact coordinates of where this image was taken.",
-  "A second, smaller copy of the photo stored inside the file. Croppings and edits sometimes leave the original preview behind.",
-  "Phones in motion-photo mode append a short video clip here. Anything after the image marker travels with the file, invisible in every viewer.",
-  "News-style metadata: often creator name, captions, and locations.",
-  "Vendor-specific data this X-ray cannot itemize. Re-encoding removes it all the same.",
-  "Treat the report above as a minimum, not a full accounting.",
-  "AI generation prompt and settings.",
-];
-for (const s of XRAY_STRINGS) strings.add(s);
+// X-ray labels, details and computed values are built in inspect.js and translated at
+// render time, so they come from the item literals and the tag tables, not a hand-kept list.
+const xraySrc = readFileSync(path.join(jsDir, "inspect.js"), "utf8");
+for (const m of xraySrc.matchAll(/\b(?:label|labelT|detail):\s*"((?:[^"\\]|\\.)*)"/g)) strings.add(norm(m[1]));
+for (const m of xraySrc.matchAll(/\btv\(\s*"((?:[^"\\]|\\.)*)"/g)) strings.add(norm(m[1]));
+const { HIGH_TAGS, MEDIUM_TAGS, XMP_HITS } = await import(path.join(jsDir, "inspect.js"));
+const { TAG_NAMES } = await import(path.join(jsDir, "tiff.js"));
+const { TRAILER_KINDS } = await import(path.join(jsDir, "jpegscan.js"));
+for (const [word] of XMP_HITS) strings.add(word);
+for (const word of Object.values(TRAILER_KINDS)) strings.add(word);
+const named = new Set(Object.values(TAG_NAMES));
+const unnamed = [...HIGH_TAGS, ...MEDIUM_TAGS].filter((s) => !named.has(s));
+if (unnamed.length) {
+  console.log(`severity set entries that name no tag in tiff.js: ${unnamed.join(", ")}`);
+  process.exit(1);
+}
+for (const s of [...HIGH_TAGS, ...MEDIUM_TAGS]) strings.add(s);
 
 const { es } = await import(path.join(ROOT, "app", "js", "strings-es.js"));
 const missing = [...strings].filter((s) => !(s in es));
