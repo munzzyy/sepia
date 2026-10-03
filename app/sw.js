@@ -3,7 +3,7 @@
 // which is deleted on pickup, purged on every boot, and never served to a
 // GET.
 
-const VERSION = "sepia-v0.6.0";
+const VERSION = "sepia-v0.6.1";
 const SHARE_CACHE = "sepia-share";
 
 // Every path is relative to the scope, so app/ works at a domain root or under a subpath.

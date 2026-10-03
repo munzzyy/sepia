@@ -1,0 +1,1 @@
+Shrinks the release build with R8, with an explicit keep rule for the JavaScript bridge so the WebView can still call into it.

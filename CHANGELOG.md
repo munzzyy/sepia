@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.1 (2026-10-03)
+
+Shrinks the release build with R8, with an explicit keep rule for the
+JavaScript bridge so the WebView can still call into it.
+
+- Turned on R8 code shrinking for release builds. The bridge class that the
+  WebView calls into is kept by name through an explicit proguard rule, so
+  shrinking the rest of the app does not break anything.
+
 ## 0.6.0 (2026-10-02)
 
 Fixes to the proof, the X-ray and the Android app.
