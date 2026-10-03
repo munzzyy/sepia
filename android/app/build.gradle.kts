@@ -20,8 +20,9 @@ android {
             // Unsigned on purpose: tools/release-android.sh signs with apksigner
             // so F-Droid's reproducible-build flow can byte-compare the APK and
             // copy the developer signature onto its own rebuild.
-            isMinifyEnabled = false
-            isShrinkResources = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             vcsInfo.include = false
         }
     }
