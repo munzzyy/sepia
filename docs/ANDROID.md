@@ -41,6 +41,10 @@ finding off there, and the page treats it like a browser without the API.
 - File and content URL access inside the WebView (`allowFileAccess` and
   `allowContentAccess` are off; the content URI hand-off goes through the
   interception instead).
+- **ACCESS_MEDIA_LOCATION.** Without it Android zero-fills the GPS tags before
+  Sepia reads the file, so the X-ray says the location was hidden from it
+  rather than showing coordinates. The original file still has them, and
+  Scrub & export removes them.
 
 ## Build
 

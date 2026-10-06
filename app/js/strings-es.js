@@ -332,6 +332,9 @@ export const es = {
   "{count} maker or unknown fields": "{count} campos del fabricante o desconocidos",
   "{count} segment(s), {bytes} bytes": "{count} segmento(s), {bytes} bytes",
   "{count} chunk(s), {bytes} bytes": "{count} bloque(s), {bytes} bytes",
+  "Hidden from Sepia by Android": "Android se lo oculta a Sepia",
+  "Android zeroed the coordinates before Sepia could read them, because Sepia asks for no permissions. The original file still has them. Scrub & export removes them.":
+    "Android puso las coordenadas a cero antes de que Sepia pudiera leerlas, porque Sepia no pide ningún permiso. El archivo original aún las contiene. Limpiar y exportar las elimina.",
   "Exact coordinates of where this image was taken.": "Coordenadas exactas de dónde se tomó esta imagen.",
   "A second, smaller copy of the photo stored inside the file. Croppings and edits sometimes leave the original preview behind.":
     "Una segunda copia más pequeña de la foto guardada dentro del archivo. Los recortes y ediciones a veces dejan atrás la vista previa original.",

@@ -121,3 +121,34 @@ test("hostile input does not throw", async () => {
   await inspectImage(new Uint8Array([0xff, 0xd8, 0xff]));
   await inspectImage(str("RIFFxxxxWEBP"));
 });
+
+function gpsJpeg(lat, lon, ref) {
+  const spec = sampleExifSpec();
+  spec.gps = spec.gps.map((e) => {
+    if (e.tag === 0x0001 || e.tag === 0x0003) return { ...e, values: ref };
+    if (e.tag === 0x0002) return { ...e, values: lat };
+    if (e.tag === 0x0004) return { ...e, values: lon };
+    return e;
+  });
+  return structuralJpeg({ segments: [buildExifSegment(buildTiff(spec))] });
+}
+
+test("android-zeroed gps reports gps-redacted and never 0.00000", async () => {
+  const z = [[0, 0], [0, 0], [0, 0]];
+  const report = await inspectImage(gpsJpeg(z, z, "\0"));
+  const item = report.items.find((i) => i.id === "gps-redacted");
+  assert.ok(item, JSON.stringify(report.items));
+  assert.equal(item.severity, "high");
+  assert.equal(report.gps, null);
+  assert.ok(!report.items.some((i) => i.id === "gps" || String(i.value).includes("0.00000")));
+});
+
+test("negative control: a genuine 0/1 coordinate still reads as exact coordinates", async () => {
+  const z = [[0, 1], [0, 1], [0, 1]];
+  const report = await inspectImage(gpsJpeg(z, z, "N"));
+  const item = report.items.find((i) => i.id === "gps");
+  assert.ok(item);
+  assert.ok(item.value.startsWith("0.00000, 0.00000"));
+  assert.equal(item.detail, "Exact coordinates of where this image was taken.");
+  assert.ok(!report.items.some((i) => i.id === "gps-redacted"));
+});

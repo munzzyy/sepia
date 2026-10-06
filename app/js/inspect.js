@@ -6,7 +6,7 @@
 
 import { startsWith, sigBytes, utf8, inflate, asciiZ } from "./bytes.js";
 import { scanJpeg, exifPayload, xmpPayload, sniffTrailer, TRAILER_KINDS } from "./jpegscan.js";
-import { parseTiff, gpsToDecimal } from "./tiff.js";
+import { parseTiff, gpsToDecimal, gpsRedacted } from "./tiff.js";
 import { scanPng, pngText, PNG_BENIGN } from "./pngscan.js";
 import { scanWebp, webpExifPayload } from "./webpscan.js";
 
@@ -158,7 +158,16 @@ function pushExifItems(items, tiff, out) {
     });
   }
   const gps = gpsToDecimal(tiff.fields);
-  if (gps) {
+  if (gpsRedacted(tiff.fields)) {
+    items.unshift({
+      id: "gps-redacted",
+      severity: "high",
+      label: "Location",
+      ...tv("Hidden from Sepia by Android"),
+      detail:
+        "Android zeroed the coordinates before Sepia could read them, because Sepia asks for no permissions. The original file still has them. Scrub & export removes them.",
+    });
+  } else if (gps) {
     out.gps = gps;
     const coords = `${gps.latitude.toFixed(5)}, ${gps.longitude.toFixed(5)}`;
     items.unshift({

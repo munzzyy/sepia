@@ -4,7 +4,7 @@ import { execFileSync } from "node:child_process";
 import { writeFileSync, mkdtempSync, rmSync, copyFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { parseTiff, gpsToDecimal } from "../app/js/tiff.js";
+import { parseTiff, gpsToDecimal, gpsRedacted } from "../app/js/tiff.js";
 import { scanJpeg, exifPayload } from "../app/js/jpegscan.js";
 import {
   buildTiff,
@@ -212,4 +212,29 @@ test("every IFD0, ExifIFD and GPS tag exiftool writes for these fields has a nam
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("android-redacted gps (0/0 rationals, NUL refs) is flagged, never a coordinate", () => {
+  const spec = sampleExifSpec();
+  const z = [[0, 0], [0, 0], [0, 0]];
+  spec.gps = spec.gps.map((e) => {
+    if (e.tag === 0x0001 || e.tag === 0x0003) return { ...e, values: "\0" };
+    if (e.tag === 0x0002 || e.tag === 0x0004) return { ...e, values: z };
+    return e;
+  });
+  const fields = parseTiff(buildTiff(spec)).fields;
+  assert.equal(gpsRedacted(fields), true);
+  assert.equal(gpsToDecimal(fields), null);
+});
+
+test("negative control: real 0/1 equator and meridian is not redacted", () => {
+  const spec = sampleExifSpec();
+  const z = [[0, 1], [0, 1], [0, 1]];
+  spec.gps = spec.gps.map((e) => (e.tag === 0x0002 || e.tag === 0x0004 ? { ...e, values: z } : e));
+  const fields = parseTiff(buildTiff(spec)).fields;
+  assert.equal(gpsRedacted(fields), false);
+  const gps = gpsToDecimal(fields);
+  assert.equal(gps.latitude, 0);
+  assert.equal(gps.longitude, 0);
+  assert.equal(gpsRedacted(parseTiff(buildTiff(sampleExifSpec())).fields), false);
 });

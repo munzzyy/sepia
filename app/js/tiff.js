@@ -275,7 +275,16 @@ export function parseTiff(bytes) {
   return out;
 }
 
-const rat = (v) => (Array.isArray(v) && v.length === 2 ? (v[1] ? v[0] / v[1] : 0) : Number(v));
+const rat = (v) => (Array.isArray(v) && v.length === 2 ? (v[1] ? v[0] / v[1] : NaN) : Number(v));
+
+// Android zero-fills GPS values for apps without ACCESS_MEDIA_LOCATION; a real 0 is 0/1, so 0/0 means hidden.
+export function gpsRedacted(fields) {
+  const zeroed = (tag) => {
+    const v = fields.find((f) => f.ifd === "gps" && f.tag === tag)?.value;
+    return Array.isArray(v) && v.length >= 3 && v.every((r) => Array.isArray(r) && r.length === 2 && r[1] === 0);
+  };
+  return zeroed(0x0002) || zeroed(0x0004);
+}
 
 // Decimal degrees from the GPS IFD fields, or null when they do not add up.
 export function gpsToDecimal(fields) {
