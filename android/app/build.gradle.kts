@@ -11,8 +11,8 @@ android {
         applicationId = "io.github.munzzyy.sepia"
         minSdk = 28
         targetSdk = 36
-        versionCode = 601
-        versionName = "0.6.1"
+        versionCode = 602
+        versionName = "0.6.2"
     }
 
     buildTypes {

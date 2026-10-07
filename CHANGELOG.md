@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.2 (2026-10-07)
 
 - On Android, a photo's location showed as "0.00000, 0.00000" because the
   system zeroes GPS for apps with no permissions. Sepia now says the
