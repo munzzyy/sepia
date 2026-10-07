@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The mark from app/icons/sepia.svg as one solid fill, scaled to sit inside the 66dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="648"
+    android:viewportHeight="648">
+    <group
+        android:translateX="87.89"
+        android:translateY="87.89"
+        android:scaleX="4.77"
+        android:scaleY="4.77">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M25,33 A8,8 0 1,0 41,33 A8,8 0 1,0 25,33 Z M16,74 L38,45 L49,59 L56,51 L56,74 Z M57,46 L63,46 L63,52 L57,52 Z M57,53 L63,53 L63,59 L57,59 Z M57,60 L63,60 L63,66 L57,66 Z M57,67 L63,67 L63,73 L57,73 Z M64,40 L70,40 L70,46 L64,46 Z M64,47 L70,47 L70,53 L64,53 Z M64,61 L70,61 L70,67 L64,67 Z M64,68 L70,68 L70,74 L64,74 Z M71,52 L77,52 L77,58 L71,58 Z M71,66 L77,66 L77,72 L71,72 Z M78,62 L83,62 L83,67 L78,67 Z" />
+    </group>
+</vector>
