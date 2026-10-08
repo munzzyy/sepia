@@ -151,6 +151,7 @@ export const es = {
     "{count} código(s) escaneables encontrados y marcados en la imagen.",
   "{count} serious leaks found. The X-ray panel lists them.":
     "{count} filtraciones graves encontradas. El panel de radiografía las enumera.",
+  "1 serious leak found. The X-ray panel lists it.": "1 filtración grave encontrada. El panel de radiografía la enumera.",
   "Code covered with ink": "Código cubierto con tinta",
   "{tool} box added": "Recuadro de {tool} añadido",
   "Box removed": "Recuadro quitado",

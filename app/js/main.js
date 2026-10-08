@@ -159,7 +159,11 @@ async function openBytes(bytes, name = "", mime = "") {
   if (report.counts.high > 0 && !xrayAutoOpened) {
     xrayAutoOpened = true;
     setXrayOpen(true);
-    announce(t("{count} serious leaks found. The X-ray panel lists them.", { count: report.counts.high }));
+    announce(
+      report.counts.high === 1
+        ? t("1 serious leak found. The X-ray panel lists it.")
+        : t("{count} serious leaks found. The X-ray panel lists them.", { count: report.counts.high }),
+    );
   } else {
     setXrayOpen(false);
   }
